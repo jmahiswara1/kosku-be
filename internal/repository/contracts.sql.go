@@ -7,133 +7,11 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
 )
-
-const getActiveContract = `-- name: GetActiveContract :one
-SELECT id, tenant_id, room_id, property_id, start_date, end_date,
-       monthly_price, deposit_amount, deposit_refunded, status,
-       file_url, created_at, updated_at
-FROM contracts
-WHERE tenant_id = $1
-  AND status = 'active'
-LIMIT 1
-`
-
-func (q *Queries) GetActiveContract(ctx context.Context, tenantID uuid.UUID) (Contract, error) {
-	row := q.db.QueryRowContext(ctx, getActiveContract, tenantID)
-	var i Contract
-	err := row.Scan(
-		&i.ID,
-		&i.TenantID,
-		&i.RoomID,
-		&i.PropertyID,
-		&i.StartDate,
-		&i.EndDate,
-		&i.MonthlyPrice,
-		&i.DepositAmount,
-		&i.DepositRefunded,
-		&i.Status,
-		&i.FileUrl,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const listContractsByTenant = `-- name: ListContractsByTenant :many
-SELECT id, tenant_id, room_id, property_id, start_date, end_date,
-       monthly_price, deposit_amount, deposit_refunded, status,
-       file_url, created_at, updated_at
-FROM contracts
-WHERE tenant_id = $1
-ORDER BY start_date DESC
-`
-
-func (q *Queries) ListContractsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Contract, error) {
-	rows, err := q.db.QueryContext(ctx, listContractsByTenant, tenantID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Contract
-	for rows.Next() {
-		var i Contract
-		if err := rows.Scan(
-			&i.ID,
-			&i.TenantID,
-			&i.RoomID,
-			&i.PropertyID,
-			&i.StartDate,
-			&i.EndDate,
-			&i.MonthlyPrice,
-			&i.DepositAmount,
-			&i.DepositRefunded,
-			&i.Status,
-			&i.FileUrl,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listContractsByRoom = `-- name: ListContractsByRoom :many
-SELECT id, tenant_id, room_id, property_id, start_date, end_date,
-       monthly_price, deposit_amount, deposit_refunded, status,
-       file_url, created_at, updated_at
-FROM contracts
-WHERE room_id = $1
-ORDER BY start_date DESC
-`
-
-func (q *Queries) ListContractsByRoom(ctx context.Context, roomID uuid.UUID) ([]Contract, error) {
-	rows, err := q.db.QueryContext(ctx, listContractsByRoom, roomID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Contract
-	for rows.Next() {
-		var i Contract
-		if err := rows.Scan(
-			&i.ID,
-			&i.TenantID,
-			&i.RoomID,
-			&i.PropertyID,
-			&i.StartDate,
-			&i.EndDate,
-			&i.MonthlyPrice,
-			&i.DepositAmount,
-			&i.DepositRefunded,
-			&i.Status,
-			&i.FileUrl,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
 
 const createContract = `-- name: CreateContract :one
 INSERT INTO contracts (tenant_id, room_id, property_id, start_date, end_date, monthly_price, deposit_amount, deposit_refunded, status, file_url)
@@ -142,16 +20,16 @@ RETURNING id, tenant_id, room_id, property_id, start_date, end_date, monthly_pri
 `
 
 type CreateContractParams struct {
-	TenantID        uuid.UUID   `json:"tenant_id"`
-	RoomID          uuid.UUID   `json:"room_id"`
-	PropertyID      uuid.UUID   `json:"property_id"`
-	StartDate       time.Time   `json:"start_date"`
-	EndDate         time.Time   `json:"end_date"`
-	MonthlyPrice    string      `json:"monthly_price"`
-	DepositAmount   interface{} `json:"deposit_amount"`
-	DepositRefunded interface{} `json:"deposit_refunded"`
-	Status          string      `json:"status"`
-	FileUrl         interface{} `json:"file_url"`
+	TenantID        uuid.UUID      `json:"tenant_id"`
+	RoomID          uuid.UUID      `json:"room_id"`
+	PropertyID      uuid.UUID      `json:"property_id"`
+	StartDate       time.Time      `json:"start_date"`
+	EndDate         time.Time      `json:"end_date"`
+	MonthlyPrice    string         `json:"monthly_price"`
+	DepositAmount   sql.NullString `json:"deposit_amount"`
+	DepositRefunded sql.NullString `json:"deposit_refunded"`
+	Status          string         `json:"status"`
+	FileUrl         sql.NullString `json:"file_url"`
 }
 
 func (q *Queries) CreateContract(ctx context.Context, arg CreateContractParams) (Contract, error) {
@@ -186,6 +64,177 @@ func (q *Queries) CreateContract(ctx context.Context, arg CreateContractParams) 
 	return i, err
 }
 
+const getActiveContract = `-- name: GetActiveContract :one
+SELECT id, tenant_id, room_id, property_id, start_date, end_date,
+       monthly_price, deposit_amount, deposit_refunded, status,
+       file_url, created_at, updated_at
+FROM contracts
+WHERE tenant_id = $1
+  AND status = 'active'
+LIMIT 1
+`
+
+func (q *Queries) GetActiveContract(ctx context.Context, tenantID uuid.UUID) (Contract, error) {
+	row := q.db.QueryRowContext(ctx, getActiveContract, tenantID)
+	var i Contract
+	err := row.Scan(
+		&i.ID,
+		&i.TenantID,
+		&i.RoomID,
+		&i.PropertyID,
+		&i.StartDate,
+		&i.EndDate,
+		&i.MonthlyPrice,
+		&i.DepositAmount,
+		&i.DepositRefunded,
+		&i.Status,
+		&i.FileUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listContractsByRoom = `-- name: ListContractsByRoom :many
+SELECT id, tenant_id, room_id, property_id, start_date, end_date,
+       monthly_price, deposit_amount, deposit_refunded, status,
+       file_url, created_at, updated_at
+FROM contracts
+WHERE room_id = $1
+ORDER BY start_date DESC
+`
+
+func (q *Queries) ListContractsByRoom(ctx context.Context, roomID uuid.UUID) ([]Contract, error) {
+	rows, err := q.db.QueryContext(ctx, listContractsByRoom, roomID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Contract{}
+	for rows.Next() {
+		var i Contract
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.RoomID,
+			&i.PropertyID,
+			&i.StartDate,
+			&i.EndDate,
+			&i.MonthlyPrice,
+			&i.DepositAmount,
+			&i.DepositRefunded,
+			&i.Status,
+			&i.FileUrl,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listContractsByTenant = `-- name: ListContractsByTenant :many
+SELECT id, tenant_id, room_id, property_id, start_date, end_date,
+       monthly_price, deposit_amount, deposit_refunded, status,
+       file_url, created_at, updated_at
+FROM contracts
+WHERE tenant_id = $1
+ORDER BY start_date DESC
+`
+
+func (q *Queries) ListContractsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Contract, error) {
+	rows, err := q.db.QueryContext(ctx, listContractsByTenant, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Contract{}
+	for rows.Next() {
+		var i Contract
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.RoomID,
+			&i.PropertyID,
+			&i.StartDate,
+			&i.EndDate,
+			&i.MonthlyPrice,
+			&i.DepositAmount,
+			&i.DepositRefunded,
+			&i.Status,
+			&i.FileUrl,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listExpiringContracts = `-- name: ListExpiringContracts :many
+SELECT id, tenant_id, room_id, property_id, start_date, end_date,
+       monthly_price, deposit_amount, deposit_refunded, status,
+       file_url, created_at, updated_at
+FROM contracts
+WHERE status = 'active'
+  AND end_date <= CURRENT_DATE + INTERVAL '30 days'
+  AND end_date >= CURRENT_DATE
+ORDER BY end_date ASC
+`
+
+func (q *Queries) ListExpiringContracts(ctx context.Context) ([]Contract, error) {
+	rows, err := q.db.QueryContext(ctx, listExpiringContracts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Contract{}
+	for rows.Next() {
+		var i Contract
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.RoomID,
+			&i.PropertyID,
+			&i.StartDate,
+			&i.EndDate,
+			&i.MonthlyPrice,
+			&i.DepositAmount,
+			&i.DepositRefunded,
+			&i.Status,
+			&i.FileUrl,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateContractStatus = `-- name: UpdateContractStatus :one
 UPDATE contracts
 SET status     = $2,
@@ -218,52 +267,4 @@ func (q *Queries) UpdateContractStatus(ctx context.Context, arg UpdateContractSt
 		&i.UpdatedAt,
 	)
 	return i, err
-}
-
-const listExpiringContracts = `-- name: ListExpiringContracts :many
-SELECT id, tenant_id, room_id, property_id, start_date, end_date,
-       monthly_price, deposit_amount, deposit_refunded, status,
-       file_url, created_at, updated_at
-FROM contracts
-WHERE status = 'active'
-  AND end_date <= CURRENT_DATE + INTERVAL '30 days'
-  AND end_date >= CURRENT_DATE
-ORDER BY end_date ASC
-`
-
-func (q *Queries) ListExpiringContracts(ctx context.Context) ([]Contract, error) {
-	rows, err := q.db.QueryContext(ctx, listExpiringContracts)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Contract
-	for rows.Next() {
-		var i Contract
-		if err := rows.Scan(
-			&i.ID,
-			&i.TenantID,
-			&i.RoomID,
-			&i.PropertyID,
-			&i.StartDate,
-			&i.EndDate,
-			&i.MonthlyPrice,
-			&i.DepositAmount,
-			&i.DepositRefunded,
-			&i.Status,
-			&i.FileUrl,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }

@@ -7,6 +7,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -18,11 +19,11 @@ RETURNING id, bill_id, tenant_id, amount, proof_url, status, rejection_reason, c
 `
 
 type CreatePaymentParams struct {
-	BillID   uuid.UUID   `json:"bill_id"`
-	TenantID uuid.UUID   `json:"tenant_id"`
-	Amount   string      `json:"amount"`
-	ProofUrl interface{} `json:"proof_url"`
-	Status   string      `json:"status"`
+	BillID   uuid.UUID      `json:"bill_id"`
+	TenantID uuid.UUID      `json:"tenant_id"`
+	Amount   string         `json:"amount"`
+	ProofUrl sql.NullString `json:"proof_url"`
+	Status   string         `json:"status"`
 }
 
 func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error) {
@@ -73,48 +74,6 @@ func (q *Queries) GetPayment(ctx context.Context, id uuid.UUID) (Payment, error)
 	return i, err
 }
 
-const updatePaymentStatus = `-- name: UpdatePaymentStatus :one
-UPDATE payments
-SET status           = $2,
-    rejection_reason = $3,
-    confirmed_by     = $4,
-    confirmed_at     = $5
-WHERE id = $1
-RETURNING id, bill_id, tenant_id, amount, proof_url, status, rejection_reason, confirmed_by, confirmed_at, created_at
-`
-
-type UpdatePaymentStatusParams struct {
-	ID              uuid.UUID   `json:"id"`
-	Status          string      `json:"status"`
-	RejectionReason interface{} `json:"rejection_reason"`
-	ConfirmedBy     interface{} `json:"confirmed_by"`
-	ConfirmedAt     interface{} `json:"confirmed_at"`
-}
-
-func (q *Queries) UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStatusParams) (Payment, error) {
-	row := q.db.QueryRowContext(ctx, updatePaymentStatus,
-		arg.ID,
-		arg.Status,
-		arg.RejectionReason,
-		arg.ConfirmedBy,
-		arg.ConfirmedAt,
-	)
-	var i Payment
-	err := row.Scan(
-		&i.ID,
-		&i.BillID,
-		&i.TenantID,
-		&i.Amount,
-		&i.ProofUrl,
-		&i.Status,
-		&i.RejectionReason,
-		&i.ConfirmedBy,
-		&i.ConfirmedAt,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
 const listPaymentsByBill = `-- name: ListPaymentsByBill :many
 SELECT id, bill_id, tenant_id, amount, proof_url, status, rejection_reason, confirmed_by, confirmed_at, created_at
 FROM payments
@@ -128,7 +87,7 @@ func (q *Queries) ListPaymentsByBill(ctx context.Context, billID uuid.UUID) ([]P
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Payment
+	items := []Payment{}
 	for rows.Next() {
 		var i Payment
 		if err := rows.Scan(
@@ -154,4 +113,46 @@ func (q *Queries) ListPaymentsByBill(ctx context.Context, billID uuid.UUID) ([]P
 		return nil, err
 	}
 	return items, nil
+}
+
+const updatePaymentStatus = `-- name: UpdatePaymentStatus :one
+UPDATE payments
+SET status           = $2,
+    rejection_reason = $3,
+    confirmed_by     = $4,
+    confirmed_at     = $5
+WHERE id = $1
+RETURNING id, bill_id, tenant_id, amount, proof_url, status, rejection_reason, confirmed_by, confirmed_at, created_at
+`
+
+type UpdatePaymentStatusParams struct {
+	ID              uuid.UUID      `json:"id"`
+	Status          string         `json:"status"`
+	RejectionReason sql.NullString `json:"rejection_reason"`
+	ConfirmedBy     uuid.NullUUID  `json:"confirmed_by"`
+	ConfirmedAt     sql.NullTime   `json:"confirmed_at"`
+}
+
+func (q *Queries) UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStatusParams) (Payment, error) {
+	row := q.db.QueryRowContext(ctx, updatePaymentStatus,
+		arg.ID,
+		arg.Status,
+		arg.RejectionReason,
+		arg.ConfirmedBy,
+		arg.ConfirmedAt,
+	)
+	var i Payment
+	err := row.Scan(
+		&i.ID,
+		&i.BillID,
+		&i.TenantID,
+		&i.Amount,
+		&i.ProofUrl,
+		&i.Status,
+		&i.RejectionReason,
+		&i.ConfirmedBy,
+		&i.ConfirmedAt,
+		&i.CreatedAt,
+	)
+	return i, err
 }

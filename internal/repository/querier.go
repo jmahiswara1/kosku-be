@@ -11,130 +11,103 @@ import (
 )
 
 type Querier interface {
-	// profiles
-	GetProfile(ctx context.Context, id uuid.UUID) (Profile, error)
-	UpsertProfile(ctx context.Context, arg UpsertProfileParams) (Profile, error)
-	UpdateProfile(ctx context.Context, arg UpdateProfileParams) (Profile, error)
-	DeleteProfile(ctx context.Context, id uuid.UUID) error
-
-	// properties
-	ListPropertiesByOwner(ctx context.Context, ownerID uuid.UUID) ([]Property, error)
-	ListPropertiesWithStatsByOwner(ctx context.Context, ownerID uuid.UUID) ([]PropertyWithStats, error)
-	GetProperty(ctx context.Context, id uuid.UUID) (Property, error)
-	GetPropertyWithStats(ctx context.Context, id uuid.UUID) (PropertyWithStats, error)
-	CreateProperty(ctx context.Context, arg CreatePropertyParams) (Property, error)
-	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) (Property, error)
-	DeleteProperty(ctx context.Context, id uuid.UUID) error
 	ArchiveProperty(ctx context.Context, id uuid.UUID) error
+	ArchiveRoom(ctx context.Context, id uuid.UUID) error
 	ArchiveRoomsByProperty(ctx context.Context, propertyID uuid.UUID) error
-	ArchiveTenantsByProperty(ctx context.Context, propertyID uuid.UUID) error
-
-	// room_types
-	ListRoomTypesByProperty(ctx context.Context, propertyID uuid.UUID) ([]RoomType, error)
+	ArchiveTenantsByProperty(ctx context.Context, propertyID uuid.NullUUID) error
+	BlacklistTenant(ctx context.Context, arg BlacklistTenantParams) (BlacklistTenantRow, error)
+	CreateAnnouncement(ctx context.Context, arg CreateAnnouncementParams) (Announcement, error)
+	CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) (AuditLog, error)
+	CreateBill(ctx context.Context, arg CreateBillParams) (Bill, error)
+	CreateContract(ctx context.Context, arg CreateContractParams) (Contract, error)
+	CreateContractTemplate(ctx context.Context, arg CreateContractTemplateParams) (ContractTemplate, error)
+	CreateInvitation(ctx context.Context, arg CreateInvitationParams) (Invitation, error)
+	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)
+	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
+	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
+	CreateProperty(ctx context.Context, arg CreatePropertyParams) (CreatePropertyRow, error)
+	CreateRoom(ctx context.Context, arg CreateRoomParams) (CreateRoomRow, error)
+	CreateRoomPhoto(ctx context.Context, arg CreateRoomPhotoParams) (RoomPhoto, error)
+	CreateRoomType(ctx context.Context, arg CreateRoomTypeParams) (RoomType, error)
+	CreateStaffPermissions(ctx context.Context, arg CreateStaffPermissionsParams) (StaffPermission, error)
+	CreateTenant(ctx context.Context, arg CreateTenantParams) (CreateTenantRow, error)
+	CreateTicket(ctx context.Context, arg CreateTicketParams) (Ticket, error)
+	CreateTicketAttachment(ctx context.Context, arg CreateTicketAttachmentParams) (TicketAttachment, error)
+	CreateUtilityCharge(ctx context.Context, arg CreateUtilityChargeParams) (UtilityCharge, error)
+	DeleteProfile(ctx context.Context, id uuid.UUID) error
+	DeleteProperty(ctx context.Context, id uuid.UUID) error
+	DeleteRoom(ctx context.Context, id uuid.UUID) error
+	DeleteRoomPhoto(ctx context.Context, id uuid.UUID) error
+	DeleteStaffPermissions(ctx context.Context, arg DeleteStaffPermissionsParams) error
+	DeleteUtilityCharge(ctx context.Context, id uuid.UUID) error
+	GetActiveContract(ctx context.Context, tenantID uuid.UUID) (Contract, error)
+	GetBill(ctx context.Context, id uuid.UUID) (Bill, error)
+	GetContractTemplate(ctx context.Context, id uuid.UUID) (ContractTemplate, error)
+	GetFinancialReport(ctx context.Context, arg GetFinancialReportParams) ([]GetFinancialReportRow, error)
+	GetInvitationByToken(ctx context.Context, token string) (Invitation, error)
+	GetMessageThread(ctx context.Context, arg GetMessageThreadParams) ([]Message, error)
+	GetPayment(ctx context.Context, id uuid.UUID) (Payment, error)
+	GetProfile(ctx context.Context, id uuid.UUID) (Profile, error)
+	GetProperty(ctx context.Context, id uuid.UUID) (GetPropertyRow, error)
+	GetPropertySettings(ctx context.Context, id uuid.UUID) (GetPropertySettingsRow, error)
+	GetPropertyWithStats(ctx context.Context, id uuid.UUID) (GetPropertyWithStatsRow, error)
+	GetRoom(ctx context.Context, id uuid.UUID) (GetRoomRow, error)
+	GetRoomHistory(ctx context.Context, roomID uuid.UUID) ([]GetRoomHistoryRow, error)
+	GetRoomPhoto(ctx context.Context, id uuid.UUID) (RoomPhoto, error)
 	GetRoomType(ctx context.Context, id uuid.UUID) (RoomType, error)
 	GetRoomTypeByName(ctx context.Context, arg GetRoomTypeByNameParams) (RoomType, error)
-	CreateRoomType(ctx context.Context, arg CreateRoomTypeParams) (RoomType, error)
-	UpdateRoomType(ctx context.Context, arg UpdateRoomTypeParams) (RoomType, error)
-
-	// rooms
-	ListRoomsByProperty(ctx context.Context, propertyID uuid.UUID) ([]ListRoomsByPropertyRow, error)
-	GetRoom(ctx context.Context, id uuid.UUID) (GetRoomRow, error)
-	CreateRoom(ctx context.Context, arg CreateRoomParams) (Room, error)
-	UpdateRoom(ctx context.Context, arg UpdateRoomParams) (Room, error)
-	DeleteRoom(ctx context.Context, id uuid.UUID) error
-	ArchiveRoom(ctx context.Context, id uuid.UUID) error
-	UpdateRoomLayout(ctx context.Context, arg UpdateRoomLayoutParams) error
-	GetRoomHistory(ctx context.Context, roomID uuid.UUID) ([]GetRoomHistoryRow, error)
-
-	// room_photos
-	ListRoomPhotos(ctx context.Context, roomID uuid.UUID) ([]RoomPhoto, error)
-	GetRoomPhoto(ctx context.Context, id uuid.UUID) (RoomPhoto, error)
-	CreateRoomPhoto(ctx context.Context, arg CreateRoomPhotoParams) (RoomPhoto, error)
-	DeleteRoomPhoto(ctx context.Context, id uuid.UUID) error
-
-	// tenants
-	ListTenants(ctx context.Context, propertyID uuid.NullUUID) ([]ListTenantsRow, error)
+	GetSettingsByOwner(ctx context.Context, ownerID uuid.UUID) (GetSettingsByOwnerRow, error)
+	GetStaffPermissions(ctx context.Context, arg GetStaffPermissionsParams) (StaffPermission, error)
 	GetTenant(ctx context.Context, id uuid.UUID) (GetTenantRow, error)
-	CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error)
-	UpdateTenant(ctx context.Context, arg UpdateTenantParams) (Tenant, error)
-	BlacklistTenant(ctx context.Context, arg BlacklistTenantParams) (Tenant, error)
-
-	// contracts
-	GetActiveContract(ctx context.Context, tenantID uuid.UUID) (Contract, error)
-	ListContractsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Contract, error)
-	ListContractsByRoom(ctx context.Context, roomID uuid.UUID) ([]Contract, error)
-	CreateContract(ctx context.Context, arg CreateContractParams) (Contract, error)
-	UpdateContractStatus(ctx context.Context, arg UpdateContractStatusParams) (Contract, error)
-	ListExpiringContracts(ctx context.Context) ([]Contract, error)
-
-	// bills
+	GetTicket(ctx context.Context, id uuid.UUID) (Ticket, error)
+	GetUnreadMessages(ctx context.Context, receiverID uuid.UUID) ([]Message, error)
+	ListAnnouncements(ctx context.Context, arg ListAnnouncementsParams) ([]Announcement, error)
+	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
 	ListBills(ctx context.Context, propertyID uuid.UUID) ([]Bill, error)
-	GetBill(ctx context.Context, id uuid.UUID) (Bill, error)
-	CreateBill(ctx context.Context, arg CreateBillParams) (Bill, error)
+	ListBillsByOwnerForExport(ctx context.Context, ownerID uuid.UUID) ([]ListBillsByOwnerForExportRow, error)
+	ListBillsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Bill, error)
+	ListContractTemplates(ctx context.Context, ownerID uuid.UUID) ([]ContractTemplate, error)
+	ListContractsByOwnerForExport(ctx context.Context, ownerID uuid.UUID) ([]ListContractsByOwnerForExportRow, error)
+	ListContractsByRoom(ctx context.Context, roomID uuid.UUID) ([]Contract, error)
+	ListContractsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Contract, error)
+	ListConversations(ctx context.Context, senderID uuid.UUID) ([]Message, error)
+	ListExpiringContracts(ctx context.Context) ([]Contract, error)
+	ListNotifications(ctx context.Context, userID uuid.UUID) ([]Notification, error)
+	ListPaymentsByBill(ctx context.Context, billID uuid.UUID) ([]Payment, error)
+	ListPaymentsByOwnerForExport(ctx context.Context, ownerID uuid.UUID) ([]ListPaymentsByOwnerForExportRow, error)
+	ListPropertiesByOwner(ctx context.Context, ownerID uuid.UUID) ([]ListPropertiesByOwnerRow, error)
+	ListPropertiesByOwnerForExport(ctx context.Context, ownerID uuid.UUID) ([]ListPropertiesByOwnerForExportRow, error)
+	ListPropertiesWithStatsByOwner(ctx context.Context, ownerID uuid.UUID) ([]ListPropertiesWithStatsByOwnerRow, error)
+	ListRoomPhotos(ctx context.Context, roomID uuid.UUID) ([]RoomPhoto, error)
+	ListRoomTypesByProperty(ctx context.Context, propertyID uuid.UUID) ([]RoomType, error)
+	ListRoomsByOwnerForExport(ctx context.Context, ownerID uuid.UUID) ([]ListRoomsByOwnerForExportRow, error)
+	ListRoomsByProperty(ctx context.Context, propertyID uuid.UUID) ([]ListRoomsByPropertyRow, error)
+	ListStaffByOwner(ctx context.Context, ownerID uuid.UUID) ([]ListStaffByOwnerRow, error)
+	ListTenants(ctx context.Context, propertyID uuid.NullUUID) ([]ListTenantsRow, error)
+	ListTenantsByOwnerForExport(ctx context.Context, ownerID uuid.UUID) ([]ListTenantsByOwnerForExportRow, error)
+	ListTicketAttachments(ctx context.Context, ticketID uuid.UUID) ([]TicketAttachment, error)
+	ListTickets(ctx context.Context, propertyID uuid.UUID) ([]Ticket, error)
+	ListUtilityCharges(ctx context.Context, billID uuid.UUID) ([]UtilityCharge, error)
+	MarkAllNotificationsRead(ctx context.Context, userID uuid.UUID) error
+	MarkInvitationUsed(ctx context.Context, id uuid.UUID) (Invitation, error)
+	MarkNotificationRead(ctx context.Context, arg MarkNotificationReadParams) error
 	UpdateBillStatus(ctx context.Context, arg UpdateBillStatusParams) (Bill, error)
 	UpdateBillUtilityAmount(ctx context.Context, arg UpdateBillUtilityAmountParams) (Bill, error)
-	ListBillsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Bill, error)
-	GetFinancialReport(ctx context.Context, arg GetFinancialReportParams) ([]GetFinancialReportRow, error)
-
-	// utility_charges
-	ListUtilityCharges(ctx context.Context, billID uuid.UUID) ([]UtilityCharge, error)
-	CreateUtilityCharge(ctx context.Context, arg CreateUtilityChargeParams) (UtilityCharge, error)
-	UpsertUtilityCharge(ctx context.Context, arg CreateUtilityChargeParams) (UtilityCharge, error)
-	DeleteUtilityCharge(ctx context.Context, id uuid.UUID) error
-
-	// payments
-	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
-	GetPayment(ctx context.Context, id uuid.UUID) (Payment, error)
-	UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStatusParams) (Payment, error)
-	ListPaymentsByBill(ctx context.Context, billID uuid.UUID) ([]Payment, error)
-
-	// tickets
-	ListTickets(ctx context.Context, propertyID uuid.UUID) ([]Ticket, error)
-	GetTicket(ctx context.Context, id uuid.UUID) (Ticket, error)
-	CreateTicket(ctx context.Context, arg CreateTicketParams) (Ticket, error)
-	UpdateTicket(ctx context.Context, arg UpdateTicketParams) (Ticket, error)
-
-	// ticket_attachments
-	CreateTicketAttachment(ctx context.Context, arg CreateTicketAttachmentParams) (TicketAttachment, error)
-	ListTicketAttachments(ctx context.Context, ticketID uuid.UUID) ([]TicketAttachment, error)
-
-	// notifications
-	ListNotifications(ctx context.Context, userID uuid.UUID) ([]Notification, error)
-	CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error)
-	MarkNotificationRead(ctx context.Context, arg MarkNotificationReadParams) error
-	MarkAllNotificationsRead(ctx context.Context, userID uuid.UUID) error
-
-	// audit_logs
-	CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) (AuditLog, error)
-	ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error)
-
-	// invitations
-	CreateInvitation(ctx context.Context, arg CreateInvitationParams) (Invitation, error)
-	GetInvitationByToken(ctx context.Context, token string) (Invitation, error)
-	MarkInvitationUsed(ctx context.Context, id uuid.UUID) (Invitation, error)
-
-	// messages
-	ListConversations(ctx context.Context, userID uuid.UUID) ([]Message, error)
-	GetMessageThread(ctx context.Context, arg GetMessageThreadParams) ([]Message, error)
-	CreateMessage(ctx context.Context, arg CreateMessageParams) (Message, error)
-	GetUnreadMessages(ctx context.Context, receiverID uuid.UUID) ([]Message, error)
-
-	// announcements
-	CreateAnnouncement(ctx context.Context, arg CreateAnnouncementParams) (Announcement, error)
-	ListAnnouncements(ctx context.Context, arg ListAnnouncementsParams) ([]Announcement, error)
-
-	// contract_templates
-	ListContractTemplates(ctx context.Context, ownerID uuid.UUID) ([]ContractTemplate, error)
-	GetContractTemplate(ctx context.Context, id uuid.UUID) (ContractTemplate, error)
-	CreateContractTemplate(ctx context.Context, arg CreateContractTemplateParams) (ContractTemplate, error)
+	UpdateBillingSettings(ctx context.Context, arg UpdateBillingSettingsParams) (UpdateBillingSettingsRow, error)
+	UpdateContractStatus(ctx context.Context, arg UpdateContractStatusParams) (Contract, error)
 	UpdateContractTemplate(ctx context.Context, arg UpdateContractTemplateParams) (ContractTemplate, error)
-
-	// staff_permissions
-	GetStaffPermissions(ctx context.Context, arg GetStaffPermissionsParams) (StaffPermission, error)
-	CreateStaffPermissions(ctx context.Context, arg CreateStaffPermissionsParams) (StaffPermission, error)
-	DeleteStaffPermissions(ctx context.Context, arg DeleteStaffPermissionsParams) error
-	ListStaffByOwner(ctx context.Context, ownerID uuid.UUID) ([]ListStaffByOwnerRow, error)
+	UpdatePaymentStatus(ctx context.Context, arg UpdatePaymentStatusParams) (Payment, error)
+	UpdateProfile(ctx context.Context, arg UpdateProfileParams) (Profile, error)
+	UpdateProfileSettings(ctx context.Context, arg UpdateProfileSettingsParams) (UpdateProfileSettingsRow, error)
+	UpdateProperty(ctx context.Context, arg UpdatePropertyParams) (UpdatePropertyRow, error)
+	UpdateRoom(ctx context.Context, arg UpdateRoomParams) (UpdateRoomRow, error)
+	UpdateRoomLayout(ctx context.Context, arg UpdateRoomLayoutParams) error
+	UpdateRoomStatus(ctx context.Context, arg UpdateRoomStatusParams) (UpdateRoomStatusRow, error)
+	UpdateRoomType(ctx context.Context, arg UpdateRoomTypeParams) (RoomType, error)
+	UpdateTenant(ctx context.Context, arg UpdateTenantParams) (UpdateTenantRow, error)
+	UpdateTicket(ctx context.Context, arg UpdateTicketParams) (Ticket, error)
+	UpsertProfile(ctx context.Context, arg UpsertProfileParams) (Profile, error)
+	UpsertUtilityCharge(ctx context.Context, arg UpsertUtilityChargeParams) (UtilityCharge, error)
 }
 
-// Ensure Queries implements Querier at compile time.
 var _ Querier = (*Queries)(nil)

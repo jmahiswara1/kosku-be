@@ -19,11 +19,11 @@ RETURNING id, owner_id, property_id, email, token, expires_at, used_at, created_
 `
 
 type CreateInvitationParams struct {
-	OwnerID    uuid.UUID   `json:"owner_id"`
-	PropertyID interface{} `json:"property_id"`
-	Email      string      `json:"email"`
-	Token      string      `json:"token"`
-	ExpiresAt  time.Time   `json:"expires_at"`
+	OwnerID    uuid.UUID     `json:"owner_id"`
+	PropertyID uuid.NullUUID `json:"property_id"`
+	Email      string        `json:"email"`
+	Token      string        `json:"token"`
+	ExpiresAt  time.Time     `json:"expires_at"`
 }
 
 func (q *Queries) CreateInvitation(ctx context.Context, arg CreateInvitationParams) (Invitation, error) {

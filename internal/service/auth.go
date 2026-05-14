@@ -48,14 +48,14 @@ func (s *AuthService) Register(ctx context.Context, userID uuid.UUID, req dto.Re
 		return dto.ProfileResponse{}, fmt.Errorf("invalid role %q: must be owner, tenant, or staff", role)
 	}
 
-	var avatarURL interface{}
+	var avatarURL sql.NullString
 	if req.AvatarURL != "" {
-		avatarURL = req.AvatarURL
+		avatarURL = sql.NullString{String: req.AvatarURL, Valid: true}
 	}
 
-	var phone interface{}
+	var phone sql.NullString
 	if req.Phone != "" {
-		phone = req.Phone
+		phone = sql.NullString{String: req.Phone, Valid: true}
 	}
 
 	profile, err := s.queries.UpsertProfile(ctx, repository.UpsertProfileParams{
@@ -84,13 +84,13 @@ func (s *AuthService) Invite(ctx context.Context, ownerID uuid.UUID, req dto.Inv
 	token := uuid.New().String()
 	expiresAt := time.Now().UTC().Add(7 * 24 * time.Hour)
 
-	var propertyID interface{}
+	var propertyID uuid.NullUUID
 	if req.PropertyID != "" {
 		pid, err := uuid.Parse(req.PropertyID)
 		if err != nil {
 			return dto.InvitationResponse{}, fmt.Errorf("invite: invalid property_id: %w", err)
 		}
-		propertyID = pid
+		propertyID = uuid.NullUUID{UUID: pid, Valid: true}
 	}
 
 	inv, err := s.queries.CreateInvitation(ctx, repository.CreateInvitationParams{

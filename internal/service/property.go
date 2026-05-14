@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -55,19 +54,10 @@ func (s *PropertyService) CreateProperty(ctx context.Context, ownerID uuid.UUID,
 	}
 
 	// Write audit log — non-fatal.
-	meta, _ := json.Marshal(map[string]string{"name": prop.Name})
-	_, _ = s.queries.CreateAuditLog(ctx, repository.CreateAuditLogParams{
-		ActorID:    ownerID,
-		Action:     "create_property",
-		EntityType: "property",
-		EntityID:   prop.ID,
-		Metadata:   meta,
-	})
+	_, _ = s.queries.CreateAuditLog(ctx, auditLogParams(ownerID, "create_property", "property", prop.ID, map[string]string{"name": prop.Name}))
 
-	return propertyToDTO(prop, 0, 0), nil
+	return propertyCreateRowToDTO(prop), nil
 }
-
-// GetProperty returns a single property with stats, enforcing owner ownership.
 func (s *PropertyService) GetProperty(ctx context.Context, ownerID, propertyID uuid.UUID) (dto.PropertyResponse, error) {
 	row, err := s.queries.GetPropertyWithStats(ctx, propertyID)
 	if err != nil {
@@ -81,7 +71,7 @@ func (s *PropertyService) GetProperty(ctx context.Context, ownerID, propertyID u
 		return dto.PropertyResponse{}, ErrForbidden
 	}
 
-	return propertyWithStatsToDTO(row), nil
+	return propertyGetWithStatsToDTO(row), nil
 }
 
 // UpdateProperty updates a property's fields and writes an audit log entry.
@@ -114,16 +104,9 @@ func (s *PropertyService) UpdateProperty(ctx context.Context, ownerID, propertyI
 	}
 
 	// Write audit log — non-fatal.
-	meta, _ := json.Marshal(map[string]string{"name": updated.Name})
-	_, _ = s.queries.CreateAuditLog(ctx, repository.CreateAuditLogParams{
-		ActorID:    ownerID,
-		Action:     "update_property",
-		EntityType: "property",
-		EntityID:   updated.ID,
-		Metadata:   meta,
-	})
+	_, _ = s.queries.CreateAuditLog(ctx, auditLogParams(ownerID, "update_property", "property", updated.ID, map[string]string{"name": updated.Name}))
 
-	return propertyToDTO(updated, 0, 0), nil
+	return propertyUpdateRowToDTO(updated), nil
 }
 
 // ArchiveProperty soft-archives a property and cascade-archives its rooms and
@@ -143,7 +126,7 @@ func (s *PropertyService) ArchiveProperty(ctx context.Context, ownerID, property
 	}
 
 	// Cascade-archive tenants first (FK dependency order).
-	if err := s.queries.ArchiveTenantsByProperty(ctx, propertyID); err != nil {
+	if err := s.queries.ArchiveTenantsByProperty(ctx, uuid.NullUUID{UUID: propertyID, Valid: true}); err != nil {
 		return fmt.Errorf("archive property: archive tenants: %w", err)
 	}
 
@@ -158,14 +141,7 @@ func (s *PropertyService) ArchiveProperty(ctx context.Context, ownerID, property
 	}
 
 	// Write audit log — non-fatal.
-	meta, _ := json.Marshal(map[string]string{"name": existing.Name})
-	_, _ = s.queries.CreateAuditLog(ctx, repository.CreateAuditLogParams{
-		ActorID:    ownerID,
-		Action:     "archive_property",
-		EntityType: "property",
-		EntityID:   propertyID,
-		Metadata:   meta,
-	})
+	_, _ = s.queries.CreateAuditLog(ctx, auditLogParams(ownerID, "archive_property", "property", propertyID, map[string]string{"name": existing.Name}))
 
 	return nil
 }
@@ -173,22 +149,22 @@ func (s *PropertyService) ArchiveProperty(ctx context.Context, ownerID, property
 // ErrForbidden is returned when the caller does not own the requested resource.
 var ErrForbidden = errors.New("forbidden")
 
-// nullableString converts an empty string to nil (for nullable DB columns).
-func nullableString(s string) interface{} {
+// nullableString converts an empty string to sql.NullString (for nullable DB columns).
+func nullableString(s string) sql.NullString {
 	if s == "" {
-		return nil
+		return sql.NullString{}
 	}
-	return s
+	return sql.NullString{String: s, Valid: true}
 }
 
-// propertyToDTO converts a repository.Property to a dto.PropertyResponse.
-func propertyToDTO(p repository.Property, totalRooms, occupiedRooms int64) dto.PropertyResponse {
+// propertyCreateRowToDTO converts a repository.CreatePropertyRow to a dto.PropertyResponse.
+func propertyCreateRowToDTO(p repository.CreatePropertyRow) dto.PropertyResponse {
 	resp := dto.PropertyResponse{
 		ID:      p.ID.String(),
 		OwnerID: p.OwnerID.String(),
 		Name:    p.Name,
 		Address: p.Address,
-		Stats:   buildStats(totalRooms, occupiedRooms),
+		Stats:   buildStats(0, 0),
 	}
 	if p.City.Valid {
 		resp.City = p.City.String
@@ -214,8 +190,74 @@ func propertyToDTO(p repository.Property, totalRooms, occupiedRooms int64) dto.P
 	return resp
 }
 
-// propertyWithStatsToDTO converts a repository.PropertyWithStats to a dto.PropertyResponse.
-func propertyWithStatsToDTO(p repository.PropertyWithStats) dto.PropertyResponse {
+// propertyUpdateRowToDTO converts a repository.UpdatePropertyRow to a dto.PropertyResponse.
+func propertyUpdateRowToDTO(p repository.UpdatePropertyRow) dto.PropertyResponse {
+	resp := dto.PropertyResponse{
+		ID:      p.ID.String(),
+		OwnerID: p.OwnerID.String(),
+		Name:    p.Name,
+		Address: p.Address,
+		Stats:   buildStats(0, 0),
+	}
+	if p.City.Valid {
+		resp.City = p.City.String
+	}
+	if p.LogoUrl.Valid {
+		resp.LogoURL = p.LogoUrl.String
+	}
+	if p.Phone.Valid {
+		resp.Phone = p.Phone.String
+	}
+	if p.BankName.Valid {
+		resp.BankName = p.BankName.String
+	}
+	if p.BankAccount.Valid {
+		resp.BankAccount = p.BankAccount.String
+	}
+	if p.CreatedAt.Valid {
+		resp.CreatedAt = p.CreatedAt.Time.Format(time.RFC3339)
+	}
+	if p.UpdatedAt.Valid {
+		resp.UpdatedAt = p.UpdatedAt.Time.Format(time.RFC3339)
+	}
+	return resp
+}
+
+// propertyWithStatsToDTO converts a repository.ListPropertiesWithStatsByOwnerRow to a dto.PropertyResponse.
+func propertyWithStatsToDTO(p repository.ListPropertiesWithStatsByOwnerRow) dto.PropertyResponse {
+	resp := dto.PropertyResponse{
+		ID:      p.ID.String(),
+		OwnerID: p.OwnerID.String(),
+		Name:    p.Name,
+		Address: p.Address,
+		Stats:   buildStats(p.TotalRooms, p.OccupiedRooms),
+	}
+	if p.City.Valid {
+		resp.City = p.City.String
+	}
+	if p.LogoUrl.Valid {
+		resp.LogoURL = p.LogoUrl.String
+	}
+	if p.Phone.Valid {
+		resp.Phone = p.Phone.String
+	}
+	if p.BankName.Valid {
+		resp.BankName = p.BankName.String
+	}
+	if p.BankAccount.Valid {
+		resp.BankAccount = p.BankAccount.String
+	}
+	if p.CreatedAt.Valid {
+		resp.CreatedAt = p.CreatedAt.Time.Format(time.RFC3339)
+	}
+	if p.UpdatedAt.Valid {
+		resp.UpdatedAt = p.UpdatedAt.Time.Format(time.RFC3339)
+	}
+	return resp
+}
+
+// propertyGetWithStatsToDTO converts a repository.GetPropertyWithStatsRow to a dto.PropertyResponse.
+func propertyGetWithStatsToDTO(p repository.GetPropertyWithStatsRow) dto.PropertyResponse {
 	resp := dto.PropertyResponse{
 		ID:      p.ID.String(),
 		OwnerID: p.OwnerID.String(),

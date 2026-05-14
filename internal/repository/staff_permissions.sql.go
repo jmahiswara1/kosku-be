@@ -13,31 +13,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const getStaffPermissions = `-- name: GetStaffPermissions :one
-SELECT id, staff_id, owner_id, modules, created_at
-FROM staff_permissions
-WHERE staff_id = $1
-  AND owner_id = $2
-`
-
-type GetStaffPermissionsParams struct {
-	StaffID uuid.UUID `json:"staff_id"`
-	OwnerID uuid.UUID `json:"owner_id"`
-}
-
-func (q *Queries) GetStaffPermissions(ctx context.Context, arg GetStaffPermissionsParams) (StaffPermission, error) {
-	row := q.db.QueryRowContext(ctx, getStaffPermissions, arg.StaffID, arg.OwnerID)
-	var i StaffPermission
-	err := row.Scan(
-		&i.ID,
-		&i.StaffID,
-		&i.OwnerID,
-		&i.Modules,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
 const createStaffPermissions = `-- name: CreateStaffPermissions :one
 INSERT INTO staff_permissions (staff_id, owner_id, modules)
 VALUES ($1, $2, $3)
@@ -51,11 +26,7 @@ type CreateStaffPermissionsParams struct {
 }
 
 func (q *Queries) CreateStaffPermissions(ctx context.Context, arg CreateStaffPermissionsParams) (StaffPermission, error) {
-	row := q.db.QueryRowContext(ctx, createStaffPermissions,
-		arg.StaffID,
-		arg.OwnerID,
-		arg.Modules,
-	)
+	row := q.db.QueryRowContext(ctx, createStaffPermissions, arg.StaffID, arg.OwnerID, arg.Modules)
 	var i StaffPermission
 	err := row.Scan(
 		&i.ID,
@@ -83,7 +54,40 @@ func (q *Queries) DeleteStaffPermissions(ctx context.Context, arg DeleteStaffPer
 	return err
 }
 
-// ListStaffByOwnerRow is the return type for ListStaffByOwner.
+const getStaffPermissions = `-- name: GetStaffPermissions :one
+SELECT id, staff_id, owner_id, modules, created_at
+FROM staff_permissions
+WHERE staff_id = $1
+  AND owner_id = $2
+`
+
+type GetStaffPermissionsParams struct {
+	StaffID uuid.UUID `json:"staff_id"`
+	OwnerID uuid.UUID `json:"owner_id"`
+}
+
+func (q *Queries) GetStaffPermissions(ctx context.Context, arg GetStaffPermissionsParams) (StaffPermission, error) {
+	row := q.db.QueryRowContext(ctx, getStaffPermissions, arg.StaffID, arg.OwnerID)
+	var i StaffPermission
+	err := row.Scan(
+		&i.ID,
+		&i.StaffID,
+		&i.OwnerID,
+		&i.Modules,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const listStaffByOwner = `-- name: ListStaffByOwner :many
+SELECT sp.id, sp.staff_id, sp.owner_id, sp.modules, sp.created_at,
+       p.full_name, p.avatar_url, p.phone, p.role
+FROM staff_permissions sp
+JOIN profiles p ON p.id = sp.staff_id
+WHERE sp.owner_id = $1
+ORDER BY p.full_name ASC
+`
+
 type ListStaffByOwnerRow struct {
 	ID        uuid.UUID       `json:"id"`
 	StaffID   uuid.UUID       `json:"staff_id"`
@@ -96,22 +100,13 @@ type ListStaffByOwnerRow struct {
 	Role      string          `json:"role"`
 }
 
-const listStaffByOwner = `-- name: ListStaffByOwner :many
-SELECT sp.id, sp.staff_id, sp.owner_id, sp.modules, sp.created_at,
-       p.full_name, p.avatar_url, p.phone, p.role
-FROM staff_permissions sp
-JOIN profiles p ON p.id = sp.staff_id
-WHERE sp.owner_id = $1
-ORDER BY p.full_name ASC
-`
-
 func (q *Queries) ListStaffByOwner(ctx context.Context, ownerID uuid.UUID) ([]ListStaffByOwnerRow, error) {
 	rows, err := q.db.QueryContext(ctx, listStaffByOwner, ownerID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ListStaffByOwnerRow
+	items := []ListStaffByOwnerRow{}
 	for rows.Next() {
 		var i ListStaffByOwnerRow
 		if err := rows.Scan(

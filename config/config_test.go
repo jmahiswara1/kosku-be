@@ -106,6 +106,46 @@ func TestLoad_MissingResendAPIKey(t *testing.T) {
 	}
 }
 
+func TestLoad_MissingSupabaseURL(t *testing.T) {
+	env := validEnv()
+	delete(env, "SUPABASE_URL")
+	cleanup := setEnv(t, env)
+	defer cleanup()
+
+	_, err := config.Load("nonexistent.env")
+	if err == nil {
+		t.Fatal("expected error for missing SUPABASE_URL, got nil")
+	}
+}
+
+func TestLoad_MissingSupabaseServiceKey(t *testing.T) {
+	env := validEnv()
+	delete(env, "SUPABASE_SERVICE_KEY")
+	cleanup := setEnv(t, env)
+	defer cleanup()
+
+	_, err := config.Load("nonexistent.env")
+	if err == nil {
+		t.Fatal("expected error for missing SUPABASE_SERVICE_KEY, got nil")
+	}
+}
+
+func TestLoad_AllMissingRequiredVarsCauseFailure(t *testing.T) {
+	// Ensure that when ALL required vars are absent, Load returns an error.
+	// This simulates a completely unconfigured environment.
+	for _, k := range []string{
+		"DATABASE_URL", "SUPABASE_URL", "SUPABASE_JWT_SECRET",
+		"SUPABASE_SERVICE_KEY", "RESEND_API_KEY",
+	} {
+		t.Setenv(k, "")
+	}
+
+	_, err := config.Load("nonexistent.env")
+	if err == nil {
+		t.Fatal("expected error when all required env vars are missing, got nil")
+	}
+}
+
 func TestLoad_AllowedOriginsParsesSingleOrigin(t *testing.T) {
 	env := validEnv()
 	env["ALLOWED_ORIGINS"] = "https://app.kosku.id"

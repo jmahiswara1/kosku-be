@@ -7,6 +7,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
@@ -18,11 +19,11 @@ RETURNING id, owner_id, property_id, title, body, send_email, created_at
 `
 
 type CreateAnnouncementParams struct {
-	OwnerID    uuid.UUID   `json:"owner_id"`
-	PropertyID interface{} `json:"property_id"`
-	Title      string      `json:"title"`
-	Body       string      `json:"body"`
-	SendEmail  interface{} `json:"send_email"`
+	OwnerID    uuid.UUID     `json:"owner_id"`
+	PropertyID uuid.NullUUID `json:"property_id"`
+	Title      string        `json:"title"`
+	Body       string        `json:"body"`
+	SendEmail  sql.NullBool  `json:"send_email"`
 }
 
 func (q *Queries) CreateAnnouncement(ctx context.Context, arg CreateAnnouncementParams) (Announcement, error) {
@@ -55,17 +56,17 @@ ORDER BY created_at DESC
 `
 
 type ListAnnouncementsParams struct {
-	OwnerID    uuid.UUID   `json:"owner_id"`
-	PropertyID interface{} `json:"property_id"`
+	OwnerID uuid.UUID `json:"owner_id"`
+	Column2 uuid.UUID `json:"column_2"`
 }
 
 func (q *Queries) ListAnnouncements(ctx context.Context, arg ListAnnouncementsParams) ([]Announcement, error) {
-	rows, err := q.db.QueryContext(ctx, listAnnouncements, arg.OwnerID, arg.PropertyID)
+	rows, err := q.db.QueryContext(ctx, listAnnouncements, arg.OwnerID, arg.Column2)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Announcement
+	items := []Announcement{}
 	for rows.Next() {
 		var i Announcement
 		if err := rows.Scan(

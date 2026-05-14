@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kosku/backend/internal/dto"
 	"github.com/kosku/backend/internal/repository"
+	"github.com/sqlc-dev/pqtype"
 )
 
 // RoomService handles business logic for room management.
@@ -105,13 +106,13 @@ func (s *RoomService) CreateRoom(ctx context.Context, ownerID, propertyID uuid.U
 
 	room, err := s.queries.CreateRoom(ctx, repository.CreateRoomParams{
 		PropertyID: propertyID,
-		RoomTypeID: roomType.ID,
+		RoomTypeID: uuid.NullUUID{UUID: roomType.ID, Valid: true},
 		Number:     req.Number,
 		Floor:      nullableInt(req.Floor),
 		Status:     status,
 		GridX:      nullableInt(req.GridX),
 		GridY:      nullableInt(req.GridY),
-		Facilities: facilitiesJSON,
+		Facilities: pqtype.NullRawMessage{RawMessage: facilitiesJSON, Valid: true},
 	})
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -209,13 +210,13 @@ func (s *RoomService) UpdateRoom(ctx context.Context, ownerID, roomID uuid.UUID,
 
 	updated, err := s.queries.UpdateRoom(ctx, repository.UpdateRoomParams{
 		ID:         roomID,
-		RoomTypeID: roomType.ID,
+		RoomTypeID: uuid.NullUUID{UUID: roomType.ID, Valid: true},
 		Number:     req.Number,
 		Floor:      nullableInt(req.Floor),
 		Status:     status,
 		GridX:      nullableInt(req.GridX),
 		GridY:      nullableInt(req.GridY),
-		Facilities: facilitiesJSON,
+		Facilities: pqtype.NullRawMessage{RawMessage: facilitiesJSON, Valid: true},
 	})
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -224,7 +225,7 @@ func (s *RoomService) UpdateRoom(ctx context.Context, ownerID, roomID uuid.UUID,
 		return dto.RoomResponse{}, fmt.Errorf("update room: %w", err)
 	}
 
-	return roomToDTO(updated, &roomType), nil
+	return roomUpdateToDTO(updated, &roomType), nil
 }
 
 // ArchiveRoom soft-archives a room, enforcing ownership.
@@ -284,8 +285,8 @@ func (s *RoomService) UpdateLayout(ctx context.Context, ownerID, propertyID uuid
 		}
 		if err := qtx.UpdateRoomLayout(ctx, repository.UpdateRoomLayoutParams{
 			ID:    roomID,
-			GridX: item.GridX,
-			GridY: item.GridY,
+			GridX: sql.NullInt32{Int32: int32(item.GridX), Valid: true},
+			GridY: sql.NullInt32{Int32: int32(item.GridY), Valid: true},
 		}); err != nil {
 			return fmt.Errorf("update layout: update room %s: %w", item.RoomID, err)
 		}
@@ -344,12 +345,12 @@ func (s *RoomService) GetRoomHistory(ctx context.Context, ownerID, roomID uuid.U
 // ErrDuplicateRoomNumber is returned when a room number already exists in the property.
 var ErrDuplicateRoomNumber = errors.New("room number already exists in this property")
 
-// nullableInt converts a *int to nil or the int value for nullable DB columns.
-func nullableInt(v *int) interface{} {
+// nullableInt converts a *int to sql.NullInt32 for nullable DB columns.
+func nullableInt(v *int) sql.NullInt32 {
 	if v == nil {
-		return nil
+		return sql.NullInt32{}
 	}
-	return *v
+	return sql.NullInt32{Int32: int32(*v), Valid: true}
 }
 
 // isUniqueViolation checks if an error is a PostgreSQL unique constraint violation.
@@ -410,9 +411,9 @@ func roomRowToDTO(row repository.GetRoomRow) dto.RoomResponse {
 		v := row.GridY.Int32
 		resp.GridY = &v
 	}
-	if len(row.Facilities) > 0 {
+	if row.Facilities.Valid && len(row.Facilities.RawMessage) > 0 {
 		var fac []string
-		if err := json.Unmarshal(row.Facilities, &fac); err == nil {
+		if err := json.Unmarshal(row.Facilities.RawMessage, &fac); err == nil {
 			resp.Facilities = fac
 		}
 	}
@@ -459,9 +460,9 @@ func listRoomRowToDTO(row repository.ListRoomsByPropertyRow) dto.RoomResponse {
 		v := row.GridY.Int32
 		resp.GridY = &v
 	}
-	if len(row.Facilities) > 0 {
+	if row.Facilities.Valid && len(row.Facilities.RawMessage) > 0 {
 		var fac []string
-		if err := json.Unmarshal(row.Facilities, &fac); err == nil {
+		if err := json.Unmarshal(row.Facilities.RawMessage, &fac); err == nil {
 			resp.Facilities = fac
 		}
 	}
@@ -488,8 +489,8 @@ func listRoomRowToDTO(row repository.ListRoomsByPropertyRow) dto.RoomResponse {
 	return resp
 }
 
-// roomToDTO converts a repository.Room and optional RoomType to dto.RoomResponse.
-func roomToDTO(room repository.Room, rt *repository.RoomType) dto.RoomResponse {
+// roomToDTO converts a repository.CreateRoomRow and optional RoomType to dto.RoomResponse.
+func roomToDTO(room repository.CreateRoomRow, rt *repository.RoomType) dto.RoomResponse {
 	resp := dto.RoomResponse{
 		ID:         room.ID.String(),
 		PropertyID: room.PropertyID.String(),
@@ -508,9 +509,54 @@ func roomToDTO(room repository.Room, rt *repository.RoomType) dto.RoomResponse {
 		v := room.GridY.Int32
 		resp.GridY = &v
 	}
-	if len(room.Facilities) > 0 {
+	if room.Facilities.Valid && len(room.Facilities.RawMessage) > 0 {
 		var fac []string
-		if err := json.Unmarshal(room.Facilities, &fac); err == nil {
+		if err := json.Unmarshal(room.Facilities.RawMessage, &fac); err == nil {
+			resp.Facilities = fac
+		}
+	}
+	if resp.Facilities == nil {
+		resp.Facilities = []string{}
+	}
+	if rt != nil {
+		resp.RoomType = &dto.RoomTypeResponse{
+			ID:           rt.ID.String(),
+			Name:         rt.Name,
+			MonthlyPrice: rt.MonthlyPrice,
+		}
+	}
+	if room.CreatedAt.Valid {
+		resp.CreatedAt = room.CreatedAt.Time.Format(time.RFC3339)
+	}
+	if room.UpdatedAt.Valid {
+		resp.UpdatedAt = room.UpdatedAt.Time.Format(time.RFC3339)
+	}
+	return resp
+}
+
+// roomUpdateToDTO converts a repository.UpdateRoomRow and optional RoomType to dto.RoomResponse.
+func roomUpdateToDTO(room repository.UpdateRoomRow, rt *repository.RoomType) dto.RoomResponse {
+	resp := dto.RoomResponse{
+		ID:         room.ID.String(),
+		PropertyID: room.PropertyID.String(),
+		Number:     room.Number,
+		Status:     room.Status,
+	}
+	if room.Floor.Valid {
+		v := room.Floor.Int32
+		resp.Floor = &v
+	}
+	if room.GridX.Valid {
+		v := room.GridX.Int32
+		resp.GridX = &v
+	}
+	if room.GridY.Valid {
+		v := room.GridY.Int32
+		resp.GridY = &v
+	}
+	if room.Facilities.Valid && len(room.Facilities.RawMessage) > 0 {
+		var fac []string
+		if err := json.Unmarshal(room.Facilities.RawMessage, &fac); err == nil {
 			resp.Facilities = fac
 		}
 	}

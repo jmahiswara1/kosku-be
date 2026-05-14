@@ -11,3 +11,8 @@ RETURNING id, room_id, url, order_idx, created_at;
 
 -- name: DeleteRoomPhoto :exec
 DELETE FROM room_photos WHERE id = $1;
+
+-- name: GetRoomPhoto :one
+SELECT id, room_id, url, order_idx, created_at
+FROM room_photos
+WHERE id = $1;

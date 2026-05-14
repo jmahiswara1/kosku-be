@@ -11,6 +11,52 @@ import (
 	"github.com/google/uuid"
 )
 
+const createContractTemplate = `-- name: CreateContractTemplate :one
+INSERT INTO contract_templates (owner_id, name, content)
+VALUES ($1, $2, $3)
+RETURNING id, owner_id, name, content, created_at, updated_at
+`
+
+type CreateContractTemplateParams struct {
+	OwnerID uuid.UUID `json:"owner_id"`
+	Name    string    `json:"name"`
+	Content string    `json:"content"`
+}
+
+func (q *Queries) CreateContractTemplate(ctx context.Context, arg CreateContractTemplateParams) (ContractTemplate, error) {
+	row := q.db.QueryRowContext(ctx, createContractTemplate, arg.OwnerID, arg.Name, arg.Content)
+	var i ContractTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.OwnerID,
+		&i.Name,
+		&i.Content,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getContractTemplate = `-- name: GetContractTemplate :one
+SELECT id, owner_id, name, content, created_at, updated_at
+FROM contract_templates
+WHERE id = $1
+`
+
+func (q *Queries) GetContractTemplate(ctx context.Context, id uuid.UUID) (ContractTemplate, error) {
+	row := q.db.QueryRowContext(ctx, getContractTemplate, id)
+	var i ContractTemplate
+	err := row.Scan(
+		&i.ID,
+		&i.OwnerID,
+		&i.Name,
+		&i.Content,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const listContractTemplates = `-- name: ListContractTemplates :many
 SELECT id, owner_id, name, content, created_at, updated_at
 FROM contract_templates
@@ -24,7 +70,7 @@ func (q *Queries) ListContractTemplates(ctx context.Context, ownerID uuid.UUID) 
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ContractTemplate
+	items := []ContractTemplate{}
 	for rows.Next() {
 		var i ContractTemplate
 		if err := rows.Scan(
@@ -48,56 +94,6 @@ func (q *Queries) ListContractTemplates(ctx context.Context, ownerID uuid.UUID) 
 	return items, nil
 }
 
-const getContractTemplate = `-- name: GetContractTemplate :one
-SELECT id, owner_id, name, content, created_at, updated_at
-FROM contract_templates
-WHERE id = $1
-`
-
-func (q *Queries) GetContractTemplate(ctx context.Context, id uuid.UUID) (ContractTemplate, error) {
-	row := q.db.QueryRowContext(ctx, getContractTemplate, id)
-	var i ContractTemplate
-	err := row.Scan(
-		&i.ID,
-		&i.OwnerID,
-		&i.Name,
-		&i.Content,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const createContractTemplate = `-- name: CreateContractTemplate :one
-INSERT INTO contract_templates (owner_id, name, content)
-VALUES ($1, $2, $3)
-RETURNING id, owner_id, name, content, created_at, updated_at
-`
-
-type CreateContractTemplateParams struct {
-	OwnerID uuid.UUID `json:"owner_id"`
-	Name    string    `json:"name"`
-	Content string    `json:"content"`
-}
-
-func (q *Queries) CreateContractTemplate(ctx context.Context, arg CreateContractTemplateParams) (ContractTemplate, error) {
-	row := q.db.QueryRowContext(ctx, createContractTemplate,
-		arg.OwnerID,
-		arg.Name,
-		arg.Content,
-	)
-	var i ContractTemplate
-	err := row.Scan(
-		&i.ID,
-		&i.OwnerID,
-		&i.Name,
-		&i.Content,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const updateContractTemplate = `-- name: UpdateContractTemplate :one
 UPDATE contract_templates
 SET name       = $2,
@@ -114,11 +110,7 @@ type UpdateContractTemplateParams struct {
 }
 
 func (q *Queries) UpdateContractTemplate(ctx context.Context, arg UpdateContractTemplateParams) (ContractTemplate, error) {
-	row := q.db.QueryRowContext(ctx, updateContractTemplate,
-		arg.ID,
-		arg.Name,
-		arg.Content,
-	)
+	row := q.db.QueryRowContext(ctx, updateContractTemplate, arg.ID, arg.Name, arg.Content)
 	var i ContractTemplate
 	err := row.Scan(
 		&i.ID,

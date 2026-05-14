@@ -112,7 +112,7 @@ func (s *RoomPhotoService) UploadPhoto(
 	photo, err := s.queries.CreateRoomPhoto(ctx, repository.CreateRoomPhotoParams{
 		RoomID:   roomID,
 		Url:      publicURL,
-		OrderIdx: nil, // default order
+		OrderIdx: sql.NullInt32{}, // default order
 	})
 	if err != nil {
 		// Best-effort cleanup: delete the uploaded file if DB insert fails.

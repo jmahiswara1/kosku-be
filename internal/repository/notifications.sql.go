@@ -7,9 +7,46 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
+
+const createNotification = `-- name: CreateNotification :one
+INSERT INTO notifications (user_id, type, title, body, entity_id)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, user_id, type, title, body, entity_id, is_read, created_at
+`
+
+type CreateNotificationParams struct {
+	UserID   uuid.UUID      `json:"user_id"`
+	Type     string         `json:"type"`
+	Title    string         `json:"title"`
+	Body     sql.NullString `json:"body"`
+	EntityID uuid.NullUUID  `json:"entity_id"`
+}
+
+func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error) {
+	row := q.db.QueryRowContext(ctx, createNotification,
+		arg.UserID,
+		arg.Type,
+		arg.Title,
+		arg.Body,
+		arg.EntityID,
+	)
+	var i Notification
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Type,
+		&i.Title,
+		&i.Body,
+		&i.EntityID,
+		&i.IsRead,
+		&i.CreatedAt,
+	)
+	return i, err
+}
 
 const listNotifications = `-- name: ListNotifications :many
 SELECT id, user_id, type, title, body, entity_id, is_read, created_at
@@ -24,7 +61,7 @@ func (q *Queries) ListNotifications(ctx context.Context, userID uuid.UUID) ([]No
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Notification
+	items := []Notification{}
 	for rows.Next() {
 		var i Notification
 		if err := rows.Scan(
@@ -50,40 +87,16 @@ func (q *Queries) ListNotifications(ctx context.Context, userID uuid.UUID) ([]No
 	return items, nil
 }
 
-const createNotification = `-- name: CreateNotification :one
-INSERT INTO notifications (user_id, type, title, body, entity_id)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, user_id, type, title, body, entity_id, is_read, created_at
+const markAllNotificationsRead = `-- name: MarkAllNotificationsRead :exec
+UPDATE notifications
+SET is_read = TRUE
+WHERE user_id = $1
+  AND is_read = FALSE
 `
 
-type CreateNotificationParams struct {
-	UserID   uuid.UUID   `json:"user_id"`
-	Type     string      `json:"type"`
-	Title    string      `json:"title"`
-	Body     interface{} `json:"body"`
-	EntityID interface{} `json:"entity_id"`
-}
-
-func (q *Queries) CreateNotification(ctx context.Context, arg CreateNotificationParams) (Notification, error) {
-	row := q.db.QueryRowContext(ctx, createNotification,
-		arg.UserID,
-		arg.Type,
-		arg.Title,
-		arg.Body,
-		arg.EntityID,
-	)
-	var i Notification
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Type,
-		&i.Title,
-		&i.Body,
-		&i.EntityID,
-		&i.IsRead,
-		&i.CreatedAt,
-	)
-	return i, err
+func (q *Queries) MarkAllNotificationsRead(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, markAllNotificationsRead, userID)
+	return err
 }
 
 const markNotificationRead = `-- name: MarkNotificationRead :exec
@@ -100,17 +113,5 @@ type MarkNotificationReadParams struct {
 
 func (q *Queries) MarkNotificationRead(ctx context.Context, arg MarkNotificationReadParams) error {
 	_, err := q.db.ExecContext(ctx, markNotificationRead, arg.ID, arg.UserID)
-	return err
-}
-
-const markAllNotificationsRead = `-- name: MarkAllNotificationsRead :exec
-UPDATE notifications
-SET is_read = TRUE
-WHERE user_id = $1
-  AND is_read = FALSE
-`
-
-func (q *Queries) MarkAllNotificationsRead(ctx context.Context, userID uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, markAllNotificationsRead, userID)
 	return err
 }

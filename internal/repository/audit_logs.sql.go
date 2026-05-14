@@ -7,9 +7,10 @@ package repository
 
 import (
 	"context"
-	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/sqlc-dev/pqtype"
 )
 
 const createAuditLog = `-- name: CreateAuditLog :one
@@ -19,11 +20,11 @@ RETURNING id, actor_id, action, entity_type, entity_id, metadata, created_at
 `
 
 type CreateAuditLogParams struct {
-	ActorID    uuid.UUID       `json:"actor_id"`
-	Action     string          `json:"action"`
-	EntityType string          `json:"entity_type"`
-	EntityID   interface{}     `json:"entity_id"`
-	Metadata   json.RawMessage `json:"metadata"`
+	ActorID    uuid.UUID             `json:"actor_id"`
+	Action     string                `json:"action"`
+	EntityType string                `json:"entity_type"`
+	EntityID   uuid.NullUUID         `json:"entity_id"`
+	Metadata   pqtype.NullRawMessage `json:"metadata"`
 }
 
 func (q *Queries) CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) (AuditLog, error) {
@@ -59,20 +60,20 @@ LIMIT $5 OFFSET $6
 `
 
 type ListAuditLogsParams struct {
-	ActorID   interface{} `json:"actor_id"`
-	Action    interface{} `json:"action"`
-	FromTime  interface{} `json:"from_time"`
-	ToTime    interface{} `json:"to_time"`
-	Limit     int32       `json:"limit"`
-	Offset    int32       `json:"offset"`
+	Column1 uuid.UUID `json:"column_1"`
+	Column2 string    `json:"column_2"`
+	Column3 time.Time `json:"column_3"`
+	Column4 time.Time `json:"column_4"`
+	Limit   int32     `json:"limit"`
+	Offset  int32     `json:"offset"`
 }
 
 func (q *Queries) ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([]AuditLog, error) {
 	rows, err := q.db.QueryContext(ctx, listAuditLogs,
-		arg.ActorID,
-		arg.Action,
-		arg.FromTime,
-		arg.ToTime,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
 		arg.Limit,
 		arg.Offset,
 	)
@@ -80,7 +81,7 @@ func (q *Queries) ListAuditLogs(ctx context.Context, arg ListAuditLogsParams) ([
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AuditLog
+	items := []AuditLog{}
 	for rows.Next() {
 		var i AuditLog
 		if err := rows.Scan(

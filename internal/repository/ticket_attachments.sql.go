@@ -47,7 +47,7 @@ func (q *Queries) ListTicketAttachments(ctx context.Context, ticketID uuid.UUID)
 		return nil, err
 	}
 	defer rows.Close()
-	var items []TicketAttachment
+	items := []TicketAttachment{}
 	for rows.Next() {
 		var i TicketAttachment
 		if err := rows.Scan(

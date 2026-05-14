@@ -7,46 +7,10 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
-
-const listUtilityCharges = `-- name: ListUtilityCharges :many
-SELECT id, bill_id, type, amount, note, created_at
-FROM utility_charges
-WHERE bill_id = $1
-ORDER BY created_at ASC
-`
-
-func (q *Queries) ListUtilityCharges(ctx context.Context, billID uuid.UUID) ([]UtilityCharge, error) {
-	rows, err := q.db.QueryContext(ctx, listUtilityCharges, billID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []UtilityCharge
-	for rows.Next() {
-		var i UtilityCharge
-		if err := rows.Scan(
-			&i.ID,
-			&i.BillID,
-			&i.Type,
-			&i.Amount,
-			&i.Note,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
 
 const createUtilityCharge = `-- name: CreateUtilityCharge :one
 INSERT INTO utility_charges (bill_id, type, amount, note)
@@ -55,40 +19,14 @@ RETURNING id, bill_id, type, amount, note, created_at
 `
 
 type CreateUtilityChargeParams struct {
-	BillID uuid.UUID   `json:"bill_id"`
-	Type   string      `json:"type"`
-	Amount string      `json:"amount"`
-	Note   interface{} `json:"note"`
+	BillID uuid.UUID      `json:"bill_id"`
+	Type   string         `json:"type"`
+	Amount string         `json:"amount"`
+	Note   sql.NullString `json:"note"`
 }
 
 func (q *Queries) CreateUtilityCharge(ctx context.Context, arg CreateUtilityChargeParams) (UtilityCharge, error) {
 	row := q.db.QueryRowContext(ctx, createUtilityCharge,
-		arg.BillID,
-		arg.Type,
-		arg.Amount,
-		arg.Note,
-	)
-	var i UtilityCharge
-	err := row.Scan(
-		&i.ID,
-		&i.BillID,
-		&i.Type,
-		&i.Amount,
-		&i.Note,
-		&i.CreatedAt,
-	)
-	return i, err
-}
-
-const upsertUtilityCharge = `-- name: UpsertUtilityCharge :one
-INSERT INTO utility_charges (bill_id, type, amount, note)
-VALUES ($1, $2, $3, $4)
-ON CONFLICT DO NOTHING
-RETURNING id, bill_id, type, amount, note, created_at
-`
-
-func (q *Queries) UpsertUtilityCharge(ctx context.Context, arg CreateUtilityChargeParams) (UtilityCharge, error) {
-	row := q.db.QueryRowContext(ctx, upsertUtilityCharge,
 		arg.BillID,
 		arg.Type,
 		arg.Amount,
@@ -113,4 +51,74 @@ DELETE FROM utility_charges WHERE id = $1
 func (q *Queries) DeleteUtilityCharge(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.ExecContext(ctx, deleteUtilityCharge, id)
 	return err
+}
+
+const listUtilityCharges = `-- name: ListUtilityCharges :many
+SELECT id, bill_id, type, amount, note, created_at
+FROM utility_charges
+WHERE bill_id = $1
+ORDER BY created_at ASC
+`
+
+func (q *Queries) ListUtilityCharges(ctx context.Context, billID uuid.UUID) ([]UtilityCharge, error) {
+	rows, err := q.db.QueryContext(ctx, listUtilityCharges, billID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []UtilityCharge{}
+	for rows.Next() {
+		var i UtilityCharge
+		if err := rows.Scan(
+			&i.ID,
+			&i.BillID,
+			&i.Type,
+			&i.Amount,
+			&i.Note,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const upsertUtilityCharge = `-- name: UpsertUtilityCharge :one
+INSERT INTO utility_charges (bill_id, type, amount, note)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT DO NOTHING
+RETURNING id, bill_id, type, amount, note, created_at
+`
+
+type UpsertUtilityChargeParams struct {
+	BillID uuid.UUID      `json:"bill_id"`
+	Type   string         `json:"type"`
+	Amount string         `json:"amount"`
+	Note   sql.NullString `json:"note"`
+}
+
+func (q *Queries) UpsertUtilityCharge(ctx context.Context, arg UpsertUtilityChargeParams) (UtilityCharge, error) {
+	row := q.db.QueryRowContext(ctx, upsertUtilityCharge,
+		arg.BillID,
+		arg.Type,
+		arg.Amount,
+		arg.Note,
+	)
+	var i UtilityCharge
+	err := row.Scan(
+		&i.ID,
+		&i.BillID,
+		&i.Type,
+		&i.Amount,
+		&i.Note,
+		&i.CreatedAt,
+	)
+	return i, err
 }

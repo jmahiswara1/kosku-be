@@ -20,3 +20,10 @@ SET name          = $2,
     monthly_price = $3
 WHERE id = $1
 RETURNING id, property_id, name, monthly_price, created_at;
+
+-- name: GetRoomTypeByName :one
+SELECT id, property_id, name, monthly_price, created_at
+FROM room_types
+WHERE property_id = $1
+  AND name = $2
+LIMIT 1;
