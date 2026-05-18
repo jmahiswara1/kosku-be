@@ -65,8 +65,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	}
 
 	var req dto.RegisterRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, errorResponse("VALIDATION_ERROR", err.Error()))
+	// Body is optional — if empty, use defaults from JWT claims
+	_ = c.ShouldBindJSON(&req)
+
+	// Validate required fields only if body was provided with content
+	if req.FullName == "" && c.Request.ContentLength > 0 {
+		c.JSON(http.StatusBadRequest, errorResponse("VALIDATION_ERROR", "full_name is required"))
 		return
 	}
 

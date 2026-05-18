@@ -33,8 +33,20 @@ func NewAuthService(queries *repository.Queries, emailClient *email.Client, appU
 }
 
 // Register upserts a profile row for the authenticated user and returns the
-// resulting profile. If the role is empty it defaults to "tenant".
+// resulting profile. If the profile already exists, the existing role is preserved.
+// If the profile is new and role is empty, it defaults to "tenant".
 func (s *AuthService) Register(ctx context.Context, userID uuid.UUID, req dto.RegisterRequest) (dto.ProfileResponse, error) {
+	// Check if profile already exists — if so, return it without overwriting role.
+	existing, err := s.queries.GetProfile(ctx, userID)
+	if err == nil {
+		// Profile exists — return as-is, preserving the existing role.
+		return profileToDTO(existing), nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return dto.ProfileResponse{}, fmt.Errorf("register: get profile: %w", err)
+	}
+
+	// New profile — set role, defaulting to "tenant".
 	role := req.Role
 	if role == "" {
 		role = "tenant"

@@ -1,13 +1,39 @@
 package middleware
 
 import (
+	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"math/big"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
+
+// cachedAPIKey stores the Supabase anon/service key for JWKS fetching.
+var cachedAPIKey string
+
+// SetAPIKey sets the API key used for JWKS fetching.
+func SetAPIKey(key string) {
+	cachedAPIKey = key
+}
+
+func ellipticCurveP256() elliptic.Curve {
+	return elliptic.P256()
+}
+
+func base64URLDecode(s string) ([]byte, error) {
+	return base64.RawURLEncoding.DecodeString(s)
+}
 
 // Context keys used to store authenticated user information.
 const (
@@ -31,100 +57,236 @@ type supabaseClaims struct {
 	} `json:"user_metadata"`
 }
 
-// Auth returns a Gin middleware that validates a Supabase-issued JWT Bearer
-// token. On success it sets the authenticated user's ID and role in the Gin
-// context so downstream handlers can read them via c.GetString(ContextKeyUserID)
-// and c.GetString(ContextKeyRole).
-//
-// Returns HTTP 401 for:
-//   - Missing Authorization header
-//   - Malformed Bearer token
-//   - Invalid, expired, or tampered tokens
-func Auth(jwtSecret string) gin.HandlerFunc {
-	keyFunc := func(token *jwt.Token) (interface{}, error) {
-		// Supabase uses HMAC-SHA256 (HS256) to sign JWTs.
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
-		}
-		return []byte(jwtSecret), nil
+// jwksCache caches the JWKS keys fetched from Supabase.
+var (
+	jwksKeys   map[string]*ecdsa.PublicKey
+	jwksMu     sync.RWMutex
+	jwksExpiry time.Time
+)
+
+// fetchJWKS fetches the JWKS from Supabase and caches the keys.
+func fetchJWKS(supabaseURL string) (map[string]*ecdsa.PublicKey, error) {
+	jwksMu.RLock()
+	if jwksKeys != nil && time.Now().Before(jwksExpiry) {
+		defer jwksMu.RUnlock()
+		return jwksKeys, nil
+	}
+	jwksMu.RUnlock()
+
+	jwksMu.Lock()
+	defer jwksMu.Unlock()
+
+	// Double-check after acquiring write lock
+	if jwksKeys != nil && time.Now().Before(jwksExpiry) {
+		return jwksKeys, nil
 	}
 
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"error": gin.H{
-					"code":    "MISSING_TOKEN",
-					"message": "Authorization header is required",
-				},
-			})
-			return
+	// Use the standard JWKS endpoint
+	jwksURL := supabaseURL + "/auth/v1/.well-known/jwks.json"
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, jwksURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create JWKS request: %w", err)
+	}
+	// Supabase requires apikey header — use the anon key from the URL
+	// We store it in a package-level var set during Auth() init
+	if cachedAPIKey != "" {
+		req.Header.Set("apikey", cachedAPIKey)
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetch JWKS: %w", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read JWKS body: %w", err)
+	}
+
+	var jwksResp struct {
+		Keys []struct {
+			Kid string `json:"kid"`
+			Kty string `json:"kty"`
+			Crv string `json:"crv"`
+			X   string `json:"x"`
+			Y   string `json:"y"`
+		} `json:"keys"`
+	}
+
+	if err := json.Unmarshal(body, &jwksResp); err != nil {
+		return nil, fmt.Errorf("parse JWKS: %w", err)
+	}
+
+	keys := make(map[string]*ecdsa.PublicKey)
+	for _, k := range jwksResp.Keys {
+		if k.Kty != "EC" {
+			continue
+		}
+		// Decode x and y coordinates from base64url
+		xBytes, err := base64URLDecode(k.X)
+		if err != nil {
+			continue
+		}
+		yBytes, err := base64URLDecode(k.Y)
+		if err != nil {
+			continue
 		}
 
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"success": false,
-				"error": gin.H{
-					"code":    "INVALID_TOKEN_FORMAT",
-					"message": "Authorization header must be in the format: Bearer <token>",
-				},
-			})
-			return
+		// Build ECDSA public key from coordinates
+		pubKey := &ecdsa.PublicKey{
+			Curve: ellipticCurveP256(),
+			X:     new(big.Int).SetBytes(xBytes),
+			Y:     new(big.Int).SetBytes(yBytes),
 		}
+		keys[k.Kid] = pubKey
+	}
 
-		tokenStr := parts[1]
+	jwksKeys = keys
+	jwksExpiry = time.Now().Add(5 * time.Minute)
+	return keys, nil
+}
 
-		claims := &supabaseClaims{}
-		token, err := jwt.ParseWithClaims(tokenStr, claims, keyFunc,
-			jwt.WithValidMethods([]string{"HS256"}),
-		)
+// resolveRole extracts the role from Supabase JWT claims.
+func resolveRole(claims *supabaseClaims) string {
+	if claims.AppMetadata.Role != "" {
+		return claims.AppMetadata.Role
+	}
+	if claims.UserMetadata.Role != "" {
+		return claims.UserMetadata.Role
+	}
+	return claims.Role
+}
+
+// verifyToken validates a JWT token string and returns the parsed claims.
+// Supports both HS256 (legacy) and ES256 (new Supabase projects).
+func verifyToken(tokenStr, jwtSecret string) (*supabaseClaims, error) {
+	parser := jwt.NewParser()
+	unverified, _, err := parser.ParseUnverified(tokenStr, &supabaseClaims{})
+	if err != nil {
+		return nil, fmt.Errorf("parse token: %w", err)
+	}
+
+	claims := &supabaseClaims{}
+
+	switch unverified.Method.Alg() {
+	case "HS256":
+		token, err := jwt.ParseWithClaims(tokenStr, claims, func(_ *jwt.Token) (any, error) {
+			return []byte(jwtSecret), nil
+		}, jwt.WithValidMethods([]string{"HS256"}))
 		if err != nil || !token.Valid {
-			code := "INVALID_TOKEN"
-			message := "Token is invalid"
+			return nil, err
+		}
 
+	case "ES256":
+		supabaseURL := ""
+		iss, _ := unverified.Claims.(*supabaseClaims).GetIssuer()
+		if iss != "" {
+			supabaseURL = strings.TrimSuffix(iss, "/auth/v1")
+		}
+
+		token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
+			return resolveES256Key(t, supabaseURL)
+		}, jwt.WithValidMethods([]string{"ES256"}))
+		if err != nil || !token.Valid {
+			return nil, err
+		}
+
+	default:
+		return nil, fmt.Errorf("unsupported signing method: %s", unverified.Method.Alg())
+	}
+
+	return claims, nil
+}
+
+// resolveES256Key fetches the ECDSA public key for the given token's kid.
+func resolveES256Key(t *jwt.Token, supabaseURL string) (any, error) {
+	if _, ok := t.Method.(*jwt.SigningMethodECDSA); !ok {
+		return nil, errors.New("unexpected signing method")
+	}
+	kid, _ := t.Header["kid"].(string)
+	if kid == "" {
+		return nil, errors.New("missing kid in token header")
+	}
+	keys, err := fetchJWKS(supabaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("fetch JWKS: %w", err)
+	}
+	key, exists := keys[kid]
+	if !exists {
+		// Force refresh and retry once
+		jwksMu.Lock()
+		jwksExpiry = time.Time{}
+		jwksMu.Unlock()
+		keys, err = fetchJWKS(supabaseURL)
+		if err != nil {
+			return nil, fmt.Errorf("refresh JWKS: %w", err)
+		}
+		key, exists = keys[kid]
+		if !exists {
+			return nil, fmt.Errorf("key %s not found in JWKS", kid)
+		}
+	}
+	return key, nil
+}
+
+// Auth returns a Gin middleware that validates a Supabase-issued JWT Bearer token.
+func Auth(jwtSecret string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokenStr, ok := extractBearerToken(c)
+		if !ok {
+			return
+		}
+
+		claims, err := verifyToken(tokenStr, jwtSecret)
+		if err != nil {
+			code, message := "INVALID_TOKEN", "Token is invalid"
 			if errors.Is(err, jwt.ErrTokenExpired) {
-				code = "TOKEN_EXPIRED"
-				message = "Token has expired"
+				code, message = "TOKEN_EXPIRED", "Token has expired"
 			}
-
+			fmt.Printf("[AUTH DEBUG] JWT validation error: %v\n", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"success": false,
-				"error": gin.H{
-					"code":    code,
-					"message": message,
-				},
+				"error":   gin.H{"code": code, "message": message},
 			})
 			return
 		}
 
-		// Extract user ID from the "sub" claim (standard JWT subject).
 		userID, err := claims.GetSubject()
 		if err != nil || userID == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"success": false,
-				"error": gin.H{
-					"code":    "INVALID_TOKEN",
-					"message": "Token is missing subject claim",
-				},
+				"error":   gin.H{"code": "INVALID_TOKEN", "message": "Token is missing subject claim"},
 			})
 			return
 		}
 
-		// Resolve role: prefer app_metadata.role, fall back to user_metadata.role,
-		// then the top-level role claim.
-		role := claims.AppMetadata.Role
-		if role == "" {
-			role = claims.UserMetadata.Role
-		}
-		if role == "" {
-			role = claims.Role
-		}
-
 		c.Set(ContextKeyUserID, userID)
-		c.Set(ContextKeyRole, role)
-
+		c.Set(ContextKeyRole, resolveRole(claims))
 		c.Next()
 	}
+}
+
+// extractBearerToken reads and validates the Authorization header format.
+// Returns the token string and true on success, or aborts the request and returns false.
+func extractBearerToken(c *gin.Context) (string, bool) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"error":   gin.H{"code": "MISSING_TOKEN", "message": "Authorization header is required"},
+		})
+		return "", false
+	}
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"error":   gin.H{"code": "INVALID_TOKEN_FORMAT", "message": "Authorization header must be in the format: Bearer <token>"},
+		})
+		return "", false
+	}
+	return parts[1], true
 }
