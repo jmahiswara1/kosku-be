@@ -160,9 +160,9 @@ func TestGenerateBills_CreatesOneBillPerActiveContract(t *testing.T) {
 
 	r := newBillingHandlerRouter(svc, ownerID.String())
 	w := postBillingJSON(r, "/v1/bills/generate", map[string]interface{}{
-		"property_id":     propertyID.String(),
-		"period_month":    1,
-		"period_year":     2025,
+		"property_id":      propertyID.String(),
+		"period_month":     1,
+		"period_year":      2025,
 		"due_day_of_month": 15,
 	})
 
@@ -234,9 +234,9 @@ func TestGenerateBills_Returns404WhenPropertyNotFound(t *testing.T) {
 
 	r := newBillingHandlerRouter(svc, ownerID.String())
 	w := postBillingJSON(r, "/v1/bills/generate", map[string]interface{}{
-		"property_id":     propertyID.String(),
-		"period_month":    1,
-		"period_year":     2025,
+		"property_id":      propertyID.String(),
+		"period_month":     1,
+		"period_year":      2025,
 		"due_day_of_month": 15,
 	})
 

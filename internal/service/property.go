@@ -58,6 +58,8 @@ func (s *PropertyService) CreateProperty(ctx context.Context, ownerID uuid.UUID,
 
 	return propertyCreateRowToDTO(prop), nil
 }
+
+// GetProperty returns the property with the given ID, enforcing owner ownership.
 func (s *PropertyService) GetProperty(ctx context.Context, ownerID, propertyID uuid.UUID) (dto.PropertyResponse, error) {
 	row, err := s.queries.GetPropertyWithStats(ctx, propertyID)
 	if err != nil {

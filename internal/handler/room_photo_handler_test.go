@@ -78,7 +78,7 @@ func buildMultipartRequest(t *testing.T, path, contentType string, fileData []by
 	if _, err := part.Write(fileData); err != nil {
 		t.Fatalf("failed to write file data: %v", err)
 	}
-	w.Close()
+	_ = w.Close()
 
 	req := httptest.NewRequest(http.MethodPost, path, &buf)
 	req.Header.Set("Content-Type", w.FormDataContentType())
@@ -429,7 +429,7 @@ func TestUploadPhoto_Returns400WhenNoFileProvided(t *testing.T) {
 	var buf bytes.Buffer
 	mw := multipart.NewWriter(&buf)
 	_ = mw.WriteField("other_field", "value")
-	mw.Close()
+	_ = mw.Close()
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/rooms/"+roomID.String()+"/photos", &buf)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
@@ -472,4 +472,3 @@ func TestUploadPhoto_Returns400WhenRoomIDInvalid(t *testing.T) {
 		t.Fatalf("expected 400, got %d; body: %s", w.Code, w.Body.String())
 	}
 }
-

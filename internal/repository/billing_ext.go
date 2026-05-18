@@ -74,7 +74,7 @@ WHERE b.property_id = $1`
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []ListBillsFilteredRow
 	for rows.Next() {
@@ -135,7 +135,6 @@ WHERE b.property_id = $1`
 	if arg.TenantName != "" {
 		query += fmt.Sprintf(" AND p.full_name ILIKE $%d", idx)
 		args = append(args, "%"+strings.TrimSpace(arg.TenantName)+"%")
-		idx++
 	}
 
 	var count int64
@@ -158,7 +157,7 @@ ORDER BY created_at ASC`
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []Contract
 	for rows.Next() {

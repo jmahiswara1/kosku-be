@@ -16,7 +16,7 @@ func setEnv(t *testing.T, pairs map[string]string) func() {
 	}
 	return func() {
 		for k := range pairs {
-			os.Unsetenv(k)
+			_ = os.Unsetenv(k)
 		}
 	}
 }
@@ -200,7 +200,7 @@ func TestLoad_LoadsFromEnvFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create temp file: %v", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	content := `DATABASE_URL=postgres://env-file-user:pass@localhost/db
 SUPABASE_URL=https://env-file.supabase.co
@@ -213,14 +213,14 @@ PORT=9090
 	if _, err := f.WriteString(content); err != nil {
 		t.Fatalf("failed to write env file: %v", err)
 	}
-	f.Close()
+	_ = f.Close()
 
 	// Ensure none of these are set in the real environment.
 	for _, k := range []string{
 		"DATABASE_URL", "SUPABASE_URL", "SUPABASE_JWT_SECRET",
 		"SUPABASE_SERVICE_KEY", "RESEND_API_KEY", "ALLOWED_ORIGINS", "PORT",
 	} {
-		os.Unsetenv(k)
+		_ = os.Unsetenv(k)
 	}
 
 	cfg, err := config.Load(f.Name())

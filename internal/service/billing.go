@@ -84,14 +84,14 @@ func (s *BillingService) GenerateBills(ctx context.Context, ownerID uuid.UUID, r
 	// Compute due date: day req.DueDayOfMonth of the billing period month/year.
 	dueDate := time.Date(req.PeriodYear, time.Month(req.PeriodMonth), req.DueDayOfMonth, 0, 0, 0, 0, time.UTC)
 
-	var bills []dto.BillResponse
+	bills := make([]dto.BillResponse, 0, len(contracts))
 	for _, contract := range contracts {
 		bill, err := s.queries.CreateBill(ctx, repository.CreateBillParams{
 			TenantID:      contract.TenantID,
 			PropertyID:    propertyID,
 			RoomID:        contract.RoomID,
-			PeriodMonth:   int32(req.PeriodMonth),
-			PeriodYear:    int32(req.PeriodYear),
+			PeriodMonth:   int32(req.PeriodMonth), //nolint:gosec // bounded 1-12
+			PeriodYear:    int32(req.PeriodYear),  //nolint:gosec // bounded year value
 			BaseAmount:    contract.MonthlyPrice,
 			UtilityAmount: sql.NullString{},
 			PenaltyAmount: sql.NullString{},
@@ -126,8 +126,8 @@ func (s *BillingService) ListBills(ctx context.Context, ownerID uuid.UUID, prope
 		PropertyID: propertyID,
 		Status:     status,
 		TenantName: tenantName,
-		Limit:      int32(perPage),
-		Offset:     int32((page - 1) * perPage),
+		Limit:      int32(perPage),              //nolint:gosec // bounded pagination value
+		Offset:     int32((page - 1) * perPage), //nolint:gosec // bounded pagination value
 	}
 
 	if fromDate != "" {
@@ -225,7 +225,7 @@ func (s *BillingService) UpdateUtilities(ctx context.Context, ownerID, billID uu
 
 	// Insert new charges and sum total.
 	var totalUtility float64
-	var newCharges []dto.UtilityChargeResponse
+	newCharges := make([]dto.UtilityChargeResponse, 0, len(req.Charges))
 	for _, item := range req.Charges {
 		amountStr := strconv.FormatFloat(item.Amount, 'f', 2, 64)
 		var noteArg sql.NullString
@@ -405,10 +405,6 @@ func (s *BillingService) ConfirmPayment(ctx context.Context, ownerID, paymentID 
 		if err != nil {
 			return
 		}
-		if tenantProfile.Phone.Valid {
-			// Phone is not email — skip if no email available.
-			// In a real system, we'd look up the auth.users email.
-		}
 		// Best-effort email — we don't have the tenant's email in profiles.
 		// The email would be sent if we had access to auth.users.
 		_ = s.emailClient.SendPaymentConfirmed(
@@ -519,10 +515,10 @@ func (s *BillingService) GetFinancialReport(ctx context.Context, ownerID, proper
 
 	rows, err := s.queries.GetFinancialReport(ctx, repository.GetFinancialReportParams{
 		PropertyID:    propertyID,
-		PeriodYear:    int32(fromYear),
-		PeriodMonth:   int32(fromMonth),
-		PeriodYear_2:  int32(toYear),
-		PeriodMonth_2: int32(toMonth),
+		PeriodYear:    int32(fromYear),  //nolint:gosec // bounded year value
+		PeriodMonth:   int32(fromMonth), //nolint:gosec // bounded 1-12
+		PeriodYear_2:  int32(toYear),    //nolint:gosec // bounded year value
+		PeriodMonth_2: int32(toMonth),   //nolint:gosec // bounded 1-12
 	})
 	if err != nil {
 		return dto.FinancialReportResponse{}, fmt.Errorf("financial report: query: %w", err)

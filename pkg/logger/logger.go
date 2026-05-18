@@ -12,7 +12,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Logger is the package-level zerolog logger. It is initialised by calling
+// Logger is the package-level zerolog logger. It is initialized by calling
 // Init and can be used directly via the zerolog global log package or through
 // the exported Logger variable.
 var Logger zerolog.Logger
@@ -20,6 +20,7 @@ var Logger zerolog.Logger
 // Level represents a logging level.
 type Level = zerolog.Level
 
+// Log level constants for use with Options.Level.
 const (
 	DebugLevel = zerolog.DebugLevel
 	InfoLevel  = zerolog.InfoLevel
@@ -38,7 +39,7 @@ type Options struct {
 	Output io.Writer
 }
 
-// Init initialises the package-level logger with the given options and sets
+// Init initializes the package-level logger with the given options and sets
 // the zerolog global logger so that log.Info(), log.Error(), etc. all use the
 // same configuration.
 func Init(opts Options) {
@@ -46,7 +47,7 @@ func Init(opts Options) {
 		opts.Output = os.Stdout
 	}
 
-	var writer io.Writer = opts.Output
+	writer := opts.Output
 	if opts.Pretty {
 		writer = zerolog.ConsoleWriter{
 			Out:        opts.Output,

@@ -47,6 +47,82 @@ func (q *Queries) CreateAnnouncement(ctx context.Context, arg CreateAnnouncement
 	return i, err
 }
 
+const getActiveTenantsByOwner = `-- name: GetActiveTenantsByOwner :many
+SELECT t.id, p.full_name
+FROM tenants t
+JOIN profiles p ON p.id = t.id
+JOIN properties pr ON pr.id = t.property_id
+WHERE pr.owner_id = $1
+  AND t.archived_at IS NULL
+  AND pr.archived_at IS NULL
+  AND (t.is_blacklisted IS NULL OR t.is_blacklisted = FALSE)
+`
+
+type GetActiveTenantsByOwnerRow struct {
+	ID       uuid.UUID `json:"id"`
+	FullName string    `json:"full_name"`
+}
+
+func (q *Queries) GetActiveTenantsByOwner(ctx context.Context, ownerID uuid.UUID) ([]GetActiveTenantsByOwnerRow, error) {
+	rows, err := q.db.QueryContext(ctx, getActiveTenantsByOwner, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetActiveTenantsByOwnerRow{}
+	for rows.Next() {
+		var i GetActiveTenantsByOwnerRow
+		if err := rows.Scan(&i.ID, &i.FullName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getActiveTenantsByProperty = `-- name: GetActiveTenantsByProperty :many
+SELECT t.id, p.full_name
+FROM tenants t
+JOIN profiles p ON p.id = t.id
+WHERE t.property_id = $1
+  AND t.archived_at IS NULL
+  AND (t.is_blacklisted IS NULL OR t.is_blacklisted = FALSE)
+`
+
+type GetActiveTenantsByPropertyRow struct {
+	ID       uuid.UUID `json:"id"`
+	FullName string    `json:"full_name"`
+}
+
+func (q *Queries) GetActiveTenantsByProperty(ctx context.Context, propertyID uuid.NullUUID) ([]GetActiveTenantsByPropertyRow, error) {
+	rows, err := q.db.QueryContext(ctx, getActiveTenantsByProperty, propertyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetActiveTenantsByPropertyRow{}
+	for rows.Next() {
+		var i GetActiveTenantsByPropertyRow
+		if err := rows.Scan(&i.ID, &i.FullName); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAnnouncements = `-- name: ListAnnouncements :many
 SELECT id, owner_id, property_id, title, body, send_email, created_at
 FROM announcements

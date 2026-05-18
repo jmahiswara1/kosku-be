@@ -28,7 +28,7 @@ type notificationStore struct {
 	notifications []repository.Notification
 }
 
-// createNotification records a notification in the store, mirroring the DB behaviour.
+// createNotification records a notification in the store, mirroring the DB behavior.
 func (s *notificationStore) createNotification(_ context.Context, arg repository.CreateNotificationParams) (repository.Notification, error) {
 	n := repository.Notification{
 		ID:       uuid.New(),
@@ -58,13 +58,13 @@ func (s *notificationStore) countForUser(userID uuid.UUID) int {
 
 // simulateBillGenerated simulates the notification side-effect of bill generation.
 // When a bill is generated for a tenant, the tenant should receive a notification.
-// This mirrors the expected behaviour described in Requirements 5.2.
+// This mirrors the expected behavior described in Requirements 5.2.
 func simulateBillGenerated(store *notificationStore, tenantID, billID uuid.UUID) error {
 	_, err := store.createNotification(context.Background(), repository.CreateNotificationParams{
 		UserID:   tenantID,
 		Type:     "bill_generated",
 		Title:    "New Bill Generated",
-		Body:     sql.NullString{String: fmt.Sprintf("A new bill has been generated for your room."), Valid: true},
+		Body:     sql.NullString{String: "A new bill has been generated for your room.", Valid: true},
 		EntityID: uuid.NullUUID{UUID: billID, Valid: true},
 	})
 	return err

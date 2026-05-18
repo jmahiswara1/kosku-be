@@ -41,6 +41,8 @@ type Querier interface {
 	DeleteStaffPermissions(ctx context.Context, arg DeleteStaffPermissionsParams) error
 	DeleteUtilityCharge(ctx context.Context, id uuid.UUID) error
 	GetActiveContract(ctx context.Context, tenantID uuid.UUID) (Contract, error)
+	GetActiveTenantsByOwner(ctx context.Context, ownerID uuid.UUID) ([]GetActiveTenantsByOwnerRow, error)
+	GetActiveTenantsByProperty(ctx context.Context, propertyID uuid.NullUUID) ([]GetActiveTenantsByPropertyRow, error)
 	GetBill(ctx context.Context, id uuid.UUID) (Bill, error)
 	GetContractTemplate(ctx context.Context, id uuid.UUID) (ContractTemplate, error)
 	GetFinancialReport(ctx context.Context, arg GetFinancialReportParams) ([]GetFinancialReportRow, error)

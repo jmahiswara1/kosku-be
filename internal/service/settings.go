@@ -97,8 +97,8 @@ func (s *SettingsService) UpdateBillingSettings(ctx context.Context, ownerID uui
 
 	updated, err := s.queries.UpdateBillingSettings(ctx, repository.UpdateBillingSettingsParams{
 		ID:              existing.ID,
-		DueDateDay:      sql.NullInt32{Int32: int32(req.DueDateDay), Valid: true},
-		GracePeriodDays: sql.NullInt32{Int32: int32(req.GracePeriodDays), Valid: true},
+		DueDateDay:      sql.NullInt32{Int32: int32(req.DueDateDay), Valid: true},      //nolint:gosec // bounded day 1-31
+		GracePeriodDays: sql.NullInt32{Int32: int32(req.GracePeriodDays), Valid: true}, //nolint:gosec // bounded days value
 		PenaltyType:     nullableStringSQL(req.PenaltyType),
 		PenaltyAmount:   penaltyAmount,
 	})
@@ -183,7 +183,7 @@ func (s *SettingsService) RemoveStaff(ctx context.Context, ownerID, staffID uuid
 }
 
 // ListAuditLogs returns paginated audit logs filterable by date range, actor, and action.
-func (s *SettingsService) ListAuditLogs(ctx context.Context, ownerID uuid.UUID, actorIDStr, action, dateFrom, dateTo string, page, perPage int) ([]dto.AuditLogResponse, error) {
+func (s *SettingsService) ListAuditLogs(ctx context.Context, _ uuid.UUID, actorIDStr, action, dateFrom, dateTo string, page, perPage int) ([]dto.AuditLogResponse, error) {
 	// Build params with Column1=actorID, Column2=action, Column3=fromTime, Column4=toTime.
 	var actorID uuid.UUID
 	if actorIDStr != "" {
@@ -209,8 +209,8 @@ func (s *SettingsService) ListAuditLogs(ctx context.Context, ownerID uuid.UUID, 
 		Column2: action,
 		Column3: fromTime,
 		Column4: toTime,
-		Limit:   int32(perPage),
-		Offset:  int32((page - 1) * perPage),
+		Limit:   int32(perPage),              //nolint:gosec // bounded pagination value
+		Offset:  int32((page - 1) * perPage), //nolint:gosec // bounded pagination value
 	}
 
 	rows, err := s.queries.ListAuditLogs(ctx, params)
@@ -546,11 +546,11 @@ func staffRowToDTO(row repository.ListStaffByOwnerRow) dto.StaffResponse {
 	}
 
 	resp := dto.StaffResponse{
-		ID:      row.ID.String(),
-		StaffID: row.StaffID.String(),
-		OwnerID: row.OwnerID.String(),
+		ID:       row.ID.String(),
+		StaffID:  row.StaffID.String(),
+		OwnerID:  row.OwnerID.String(),
 		FullName: row.FullName,
-		Modules: modules,
+		Modules:  modules,
 	}
 	if row.AvatarUrl.Valid {
 		resp.AvatarURL = row.AvatarUrl.String
@@ -581,5 +581,3 @@ func auditLogToDTO(log repository.AuditLog) dto.AuditLogResponse {
 	}
 	return resp
 }
-
-

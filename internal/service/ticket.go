@@ -129,8 +129,8 @@ func (s *TicketService) CreateTicket(
 	}
 
 	// Upload photos and insert attachment rows.
-	var attachments []dto.TicketAttachmentResponse
-	var uploadedFilenames []string
+	attachments := make([]dto.TicketAttachmentResponse, 0, len(photos))
+	uploadedFilenames := make([]string, 0, len(photos))
 	for i, data := range photos {
 		sniff := data
 		if len(sniff) > 512 {
@@ -226,8 +226,8 @@ func (s *TicketService) ListTickets(
 		PropertyID: propertyID,
 		Status:     status,
 		Priority:   priority,
-		Limit:      int32(perPage),
-		Offset:     int32((page - 1) * perPage),
+		Limit:      int32(perPage),              //nolint:gosec // bounded pagination value
+		Offset:     int32((page - 1) * perPage), //nolint:gosec // bounded pagination value
 	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("list tickets: %w", err)

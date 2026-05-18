@@ -97,7 +97,7 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 				return
 			}
 			data, err := io.ReadAll(f)
-			f.Close()
+			_ = f.Close()
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, errorResponse("READ_FILE_ERROR", "Failed to read uploaded file"))
 				return

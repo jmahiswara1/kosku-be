@@ -285,8 +285,8 @@ func (s *RoomService) UpdateLayout(ctx context.Context, ownerID, propertyID uuid
 		}
 		if err := qtx.UpdateRoomLayout(ctx, repository.UpdateRoomLayoutParams{
 			ID:    roomID,
-			GridX: sql.NullInt32{Int32: int32(item.GridX), Valid: true},
-			GridY: sql.NullInt32{Int32: int32(item.GridY), Valid: true},
+			GridX: sql.NullInt32{Int32: int32(item.GridX), Valid: true}, //nolint:gosec // bounded grid coordinate
+			GridY: sql.NullInt32{Int32: int32(item.GridY), Valid: true}, //nolint:gosec // bounded grid coordinate
 		}); err != nil {
 			return fmt.Errorf("update layout: update room %s: %w", item.RoomID, err)
 		}
@@ -350,7 +350,7 @@ func nullableInt(v *int) sql.NullInt32 {
 	if v == nil {
 		return sql.NullInt32{}
 	}
-	return sql.NullInt32{Int32: int32(*v), Valid: true}
+	return sql.NullInt32{Int32: int32(*v), Valid: true} //nolint:gosec // bounded grid/floor value
 }
 
 // isUniqueViolation checks if an error is a PostgreSQL unique constraint violation.

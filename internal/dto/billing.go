@@ -3,10 +3,10 @@ package dto
 
 // GenerateBillsRequest is the request body for POST /v1/bills/generate.
 type GenerateBillsRequest struct {
-	PropertyID  string `json:"property_id"  binding:"required,uuid"`
-	PeriodMonth int    `json:"period_month" binding:"required,min=1,max=12"`
-	PeriodYear  int    `json:"period_year"  binding:"required,min=2000"`
-	DueDayOfMonth int  `json:"due_day_of_month" binding:"required,min=1,max=28"`
+	PropertyID    string `json:"property_id"  binding:"required,uuid"`
+	PeriodMonth   int    `json:"period_month" binding:"required,min=1,max=12"`
+	PeriodYear    int    `json:"period_year"  binding:"required,min=2000"`
+	DueDayOfMonth int    `json:"due_day_of_month" binding:"required,min=1,max=28"`
 }
 
 // UtilityChargeItem is a single utility charge line item.

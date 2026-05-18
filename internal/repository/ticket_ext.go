@@ -63,7 +63,7 @@ WHERE t.property_id = $1`
 	if err != nil {
 		return nil, 0, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []ListTicketsFilteredRow
 	for rows.Next() {
@@ -90,4 +90,46 @@ WHERE t.property_id = $1`
 		return nil, 0, err
 	}
 	return items, total, rows.Err()
+}
+
+// ListTicketsByTenant returns all tickets submitted by a specific tenant,
+// ordered by creation date descending.
+func (q *Queries) ListTicketsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Ticket, error) {
+	const query = `
+SELECT id, tenant_id, property_id, room_id, title, description,
+       priority, status, resolution, created_at, updated_at
+FROM tickets
+WHERE tenant_id = $1
+ORDER BY created_at DESC`
+
+	rows, err := q.db.QueryContext(ctx, query, tenantID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var items []Ticket
+	for rows.Next() {
+		var i Ticket
+		if err := rows.Scan(
+			&i.ID,
+			&i.TenantID,
+			&i.PropertyID,
+			&i.RoomID,
+			&i.Title,
+			&i.Description,
+			&i.Priority,
+			&i.Status,
+			&i.Resolution,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	return items, rows.Err()
 }

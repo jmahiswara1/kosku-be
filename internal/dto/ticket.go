@@ -5,7 +5,7 @@ package dto
 type CreateTicketRequest struct {
 	Title       string `form:"title"       binding:"required"`
 	Description string `form:"description" binding:"required"`
-	Priority    string `form:"priority"`   // optional; defaults to "medium"
+	Priority    string `form:"priority"` // optional; defaults to "medium"
 }
 
 // UpdateTicketRequest is the request body for PUT /v1/tickets/:id.

@@ -150,8 +150,8 @@ func TestLayoutPersistence_Property(t *testing.T) {
 
 		for i := 0; i < count; i++ {
 			roomID := uuid.New()
-			gridX := int32(i * 3)     // distinct, predictable X positions
-			gridY := int32(i*3 + 100) // distinct, predictable Y positions
+			gridX := int32(i * 3)
+			gridY := int32(i*3 + 100)
 
 			rooms[i] = dto.RoomResponse{
 				ID:         roomID.String(),
@@ -175,7 +175,7 @@ func TestLayoutPersistence_Property(t *testing.T) {
 		type gridPos struct{ x, y int32 }
 		store := make(map[string]gridPos, count)
 
-		// Initialise the store with the initial room positions.
+		// Initialize the store with the initial room positions.
 		for _, r := range rooms {
 			store[r.ID] = gridPos{x: *r.GridX, y: *r.GridY}
 		}

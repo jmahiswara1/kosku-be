@@ -104,7 +104,7 @@ func buildTicketMultipartRequest(t *testing.T, path string, fields map[string]st
 			t.Fatalf("failed to write file data: %v", err)
 		}
 	}
-	w.Close()
+	_ = w.Close()
 
 	req := httptest.NewRequest(http.MethodPost, path, &buf)
 	req.Header.Set("Content-Type", w.FormDataContentType())

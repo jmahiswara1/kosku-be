@@ -332,11 +332,11 @@ func TestAuditCompleteness_EntityTypeConsistency(t *testing.T) {
 
 	// Expected entity types per operation name.
 	expectedEntityTypes := map[string]string{
-		"confirm_payment":            "payment",
-		"reject_payment":             "payment",
-		"contract_create (checkin)":  "contract",
+		"confirm_payment":               "payment",
+		"reject_payment":                "payment",
+		"contract_create (checkin)":     "contract",
 		"contract_terminate (checkout)": "contract",
-		"tenant_blacklist":           "tenant",
+		"tenant_blacklist":              "tenant",
 	}
 
 	for _, op := range sensitiveOps {

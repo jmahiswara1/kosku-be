@@ -82,7 +82,7 @@ func (h *RoomPhotoHandler) UploadPhoto(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errorResponse("MISSING_FILE", "A 'photo' file field is required"))
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Read the file bytes.
 	fileData, err := io.ReadAll(file)

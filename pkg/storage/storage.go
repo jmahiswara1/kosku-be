@@ -51,7 +51,7 @@ func (c *Client) UploadFile(ctx context.Context, bucket, filename string, data [
 	if err != nil {
 		return "", fmt.Errorf("storage: upload request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
@@ -78,7 +78,7 @@ func (c *Client) DeleteFile(ctx context.Context, bucket, filename string) error 
 	if err != nil {
 		return fmt.Errorf("storage: delete request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		body, _ := io.ReadAll(resp.Body)

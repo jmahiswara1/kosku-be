@@ -202,3 +202,19 @@ func (c *Client) SendStaffInvitation(recipientEmail, ownerName, inviteURL string
 
 	return c.send(recipientEmail, subject, html)
 }
+
+// SendAnnouncement sends an announcement email to a tenant.
+// recipientEmail is the tenant's email address (may be empty if not available),
+// recipientName is the tenant's display name, title is the announcement title,
+// and body is the announcement body text.
+func (c *Client) SendAnnouncement(recipientEmail, recipientName, title, body string) error {
+	subject := fmt.Sprintf("Announcement: %s", title)
+	html := fmt.Sprintf(`
+<h2>%s</h2>
+<p>Hi %s,</p>
+<p>%s</p>
+<p>Please log in to your KosKu portal for more details.</p>
+`, title, recipientName, body)
+
+	return c.send(recipientEmail, subject, html)
+}

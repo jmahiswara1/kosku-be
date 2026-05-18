@@ -16,9 +16,9 @@ import (
 
 // AuthService handles authentication and authorisation business logic.
 type AuthService struct {
-	queries    *repository.Queries
+	queries     *repository.Queries
 	emailClient *email.Client
-	appURL     string
+	appURL      string
 }
 
 // NewAuthService creates a new AuthService.

@@ -8,7 +8,7 @@ package service_test
 //
 // This test verifies that the application-level token generation logic
 // (uuid.New().String()) produces distinct UUIDs when called concurrently,
-// matching the behaviour of the AuthService.Invite method.
+// matching the behavior of the AuthService.Invite method.
 
 import (
 	"sync"

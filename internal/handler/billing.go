@@ -317,7 +317,7 @@ func (h *BillingHandler) SubmitPayment(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, errorResponse("MISSING_FILE", "A 'proof' file field is required"))
 		return
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	fileData, err := io.ReadAll(file)
 	if err != nil {
@@ -601,31 +601,45 @@ func (h *BillingHandler) ExportFinancialReport(c *gin.Context) {
 // generateFinancialReportExcel creates an Excel workbook from the financial report data.
 func generateFinancialReportExcel(report dto.FinancialReportResponse) (*bytes.Buffer, error) {
 	f := excelize.NewFile()
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	sheet := "Financial Report"
-	f.SetSheetName("Sheet1", sheet)
+	if err := f.SetSheetName("Sheet1", sheet); err != nil {
+		return nil, err
+	}
 
 	// Header row.
 	headers := []string{"Period", "Total Billed", "Total Paid", "Bill Count"}
 	for i, h := range headers {
 		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
-		f.SetCellValue(sheet, cell, h)
+		if err := f.SetCellValue(sheet, cell, h); err != nil {
+			return nil, err
+		}
 	}
 
 	// Data rows.
 	for i, row := range report.Rows {
 		rowNum := i + 2
 		period := fmt.Sprintf("%d/%02d", row.PeriodYear, row.PeriodMonth)
-		f.SetCellValue(sheet, mustCell(1, rowNum), period)
-		f.SetCellValue(sheet, mustCell(2, rowNum), row.TotalBilled)
-		f.SetCellValue(sheet, mustCell(3, rowNum), row.TotalPaid)
-		f.SetCellValue(sheet, mustCell(4, rowNum), row.BillCount)
+		if err := f.SetCellValue(sheet, mustCell(1, rowNum), period); err != nil {
+			return nil, err
+		}
+		if err := f.SetCellValue(sheet, mustCell(2, rowNum), row.TotalBilled); err != nil {
+			return nil, err
+		}
+		if err := f.SetCellValue(sheet, mustCell(3, rowNum), row.TotalPaid); err != nil {
+			return nil, err
+		}
+		if err := f.SetCellValue(sheet, mustCell(4, rowNum), row.BillCount); err != nil {
+			return nil, err
+		}
 	}
 
 	// Summary row.
 	summaryRow := len(report.Rows) + 3
-	f.SetCellValue(sheet, mustCell(1, summaryRow), fmt.Sprintf("Generated: %s", time.Now().Format("2006-01-02 15:04:05")))
+	if err := f.SetCellValue(sheet, mustCell(1, summaryRow), fmt.Sprintf("Generated: %s", time.Now().Format("2006-01-02 15:04:05"))); err != nil {
+		return nil, err
+	}
 
 	var buf bytes.Buffer
 	if err := f.Write(&buf); err != nil {

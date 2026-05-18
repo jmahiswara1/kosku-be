@@ -1,5 +1,5 @@
 // Package dto defines Data Transfer Objects used for request/response
-// serialisation in the KosKu API handlers.
+// serialization in the KosKu API handlers.
 package dto
 
 // RegisterRequest is the request body for POST /v1/auth/register.
