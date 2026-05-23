@@ -17,6 +17,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 // cachedAPIKey stores the Supabase anon/service key for JWKS fetching.
@@ -232,8 +233,21 @@ func resolveES256Key(t *jwt.Token, supabaseURL string) (any, error) {
 	return key, nil
 }
 
+// RoleLoader is implemented by any type that can look up a user's role by ID.
+// The repository.Queries type satisfies this interface via GetProfile.
+type RoleLoader interface {
+	GetProfileRole(ctx context.Context, id uuid.UUID) (string, error)
+}
+
 // Auth returns a Gin middleware that validates a Supabase-issued JWT Bearer token.
-func Auth(jwtSecret string) gin.HandlerFunc {
+// If roleLoader is non-nil, the user's role is fetched from the database after
+// JWT validation (source of truth). If roleLoader is nil, the role is read from
+// the JWT claims (app_metadata.role → user_metadata.role → role).
+func Auth(jwtSecret string, roleLoader ...RoleLoader) gin.HandlerFunc {
+	var rl RoleLoader
+	if len(roleLoader) > 0 {
+		rl = roleLoader[0]
+	}
 	return func(c *gin.Context) {
 		tokenStr, ok := extractBearerToken(c)
 		if !ok {
@@ -264,6 +278,22 @@ func Auth(jwtSecret string) gin.HandlerFunc {
 		}
 
 		c.Set(ContextKeyUserID, userID)
+
+		// Resolve role: prefer DB lookup (source of truth) over JWT claims.
+		if rl != nil {
+			uid, parseErr := uuid.Parse(userID)
+			if parseErr == nil {
+				dbRole, lookupErr := rl.GetProfileRole(c.Request.Context(), uid)
+				if lookupErr == nil && dbRole != "" {
+					c.Set(ContextKeyRole, dbRole)
+					c.Next()
+					return
+				}
+				// Profile not found yet (first-time registration) — fall through
+				// to JWT claim so /v1/auth/register can still be called.
+			}
+		}
+
 		c.Set(ContextKeyRole, resolveRole(claims))
 		c.Next()
 	}

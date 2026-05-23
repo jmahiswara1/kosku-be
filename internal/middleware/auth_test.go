@@ -60,9 +60,7 @@ func doGet(r *gin.Engine, authHeader string) *httptest.ResponseRecorder {
 	return w
 }
 
-// ---------------------------------------------------------------------------
 // Missing token
-// ---------------------------------------------------------------------------
 
 // TestAuth_MissingToken verifies that a request without an Authorization
 // header is rejected with HTTP 401.
@@ -103,9 +101,7 @@ func TestAuth_MalformedHeader(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Invalid / malformed token
-// ---------------------------------------------------------------------------
 
 // TestAuth_InvalidToken verifies that a completely malformed token string is
 // rejected with HTTP 401.
@@ -150,9 +146,7 @@ func TestAuth_TamperedToken(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Expired token
-// ---------------------------------------------------------------------------
 
 // TestAuth_ExpiredToken verifies that a token whose expiry is in the past is
 // rejected with HTTP 401.
@@ -169,9 +163,7 @@ func TestAuth_ExpiredToken(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Valid token
-// ---------------------------------------------------------------------------
 
 // TestAuth_ValidToken verifies that a well-formed, unexpired token signed with
 // the correct secret is accepted and the request proceeds to the handler.
