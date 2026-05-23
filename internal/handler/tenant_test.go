@@ -19,9 +19,7 @@ import (
 	"github.com/kosku/backend/internal/service"
 )
 
-// ---------------------------------------------------------------------------
 // Mock service
-// ---------------------------------------------------------------------------
 
 // stubTenantService is a test double for handler.TenantServicer used in unit tests.
 type stubTenantService struct {
@@ -57,9 +55,7 @@ func (m *stubTenantService) Blacklist(ctx context.Context, ownerID, tenantID uui
 	return m.blacklistFn(ctx, ownerID, tenantID, req)
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 // newTenantHandlerRouter builds a minimal Gin router that injects userID into
 // the context (simulating what the Auth middleware does) and registers the
@@ -106,9 +102,7 @@ func decodeTenantBody(t *testing.T, w *httptest.ResponseRecorder) map[string]int
 	return m
 }
 
-// ---------------------------------------------------------------------------
 // Checkin tests
-// ---------------------------------------------------------------------------
 
 // TestCheckin_FailsIfRoomNotVacant verifies that POST /v1/tenants/checkin
 // returns HTTP 409 when the room is not vacant.
@@ -285,9 +279,7 @@ func TestCheckin_Returns201OnSuccess(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Checkout tests
-// ---------------------------------------------------------------------------
 
 // TestCheckout_SetsRoomToVacant verifies that POST /v1/tenants/checkout/:id
 // returns HTTP 200 with the terminated contract when checkout succeeds.
@@ -404,9 +396,7 @@ func TestCheckout_Returns400WhenTenantIDInvalid(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Blacklist tests
-// ---------------------------------------------------------------------------
 
 // TestBlacklist_Returns400WhenReasonMissing verifies that
 // POST /v1/tenants/:id/blacklist returns HTTP 400 when the reason is missing.

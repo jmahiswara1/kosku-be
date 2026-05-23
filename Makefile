@@ -1,6 +1,6 @@
 .PHONY: run build test lint migrate-up migrate-down sqlc-gen swagger
 
-# ─── Configuration ────────────────────────────────────────────────────────────
+#  Configuration ─
 APP_NAME    := kosku-backend
 BINARY_DIR  := bin
 BINARY      := $(BINARY_DIR)/$(APP_NAME)
@@ -8,7 +8,7 @@ MAIN        := ./cmd/api/main.go
 MIGRATE_DIR := db/migrations
 DB_URL      ?= $(shell grep DATABASE_URL .env 2>/dev/null | cut -d '=' -f2-)
 
-# ─── Development ──────────────────────────────────────────────────────────────
+#  Development 
 
 ## run: Start the API server with live reload (requires air)
 run:
@@ -26,7 +26,7 @@ build:
 	go build -ldflags="-s -w" -o $(BINARY) $(MAIN)
 	@echo "Binary written to $(BINARY)"
 
-# ─── Testing & Quality ────────────────────────────────────────────────────────
+#  Testing & Quality ──
 
 ## test: Run all tests with race detector and coverage
 test:
@@ -36,7 +36,7 @@ test:
 lint:
 	golangci-lint run ./...
 
-# ─── Database Migrations ──────────────────────────────────────────────────────
+#  Database Migrations 
 
 ## migrate-up: Apply all pending migrations
 migrate-up:
@@ -48,7 +48,7 @@ migrate-down:
 	@echo "Rolling back last migration..."
 	migrate -path $(MIGRATE_DIR) -database "$(DB_URL)" down 1
 
-# ─── Code Generation ──────────────────────────────────────────────────────────
+#  Code Generation ─
 
 ## sqlc-gen: Generate type-safe Go code from SQL queries
 sqlc-gen:
@@ -60,7 +60,7 @@ swagger:
 	@echo "Generating Swagger docs..."
 	swag init -g $(MAIN) -o docs/
 
-# ─── Help ─────────────────────────────────────────────────────────────────────
+#  Help ─
 
 ## help: Show this help message
 help:

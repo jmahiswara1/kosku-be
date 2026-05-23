@@ -19,9 +19,7 @@ import (
 	"github.com/kosku/backend/internal/service"
 )
 
-// ---------------------------------------------------------------------------
 // Mock service
-// ---------------------------------------------------------------------------
 
 // stubBillingService is a test double for handler.BillingServicer.
 type stubBillingService struct {
@@ -67,9 +65,7 @@ func (m *stubBillingService) GetFinancialReport(ctx context.Context, ownerID, pr
 	return m.getFinancialReportFn(ctx, ownerID, propertyID, fromMonth, fromYear, toMonth, toYear)
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 // newBillingHandlerRouter builds a minimal Gin router with the billing handler routes.
 func newBillingHandlerRouter(svc handler.BillingServicer, userID string) *gin.Engine {
@@ -128,9 +124,7 @@ func decodeBillingBody(t *testing.T, w *httptest.ResponseRecorder) map[string]in
 	return m
 }
 
-// ---------------------------------------------------------------------------
 // GenerateBills tests
-// ---------------------------------------------------------------------------
 
 // TestGenerateBills_CreatesOneBillPerActiveContract verifies that POST /v1/bills/generate
 // returns HTTP 201 with the generated bills.
@@ -245,9 +239,7 @@ func TestGenerateBills_Returns404WhenPropertyNotFound(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // ConfirmPayment tests
-// ---------------------------------------------------------------------------
 
 // TestConfirmPayment_RejectsIfAlreadyConfirmed verifies that
 // PUT /v1/payments/:id/confirm returns HTTP 409 when the payment is already confirmed.
@@ -360,9 +352,7 @@ func TestConfirmPayment_Returns404WhenNotFound(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // RejectPayment tests
-// ---------------------------------------------------------------------------
 
 // TestRejectPayment_Returns400WhenReasonMissing verifies that
 // PUT /v1/payments/:id/reject returns HTTP 400 when the reason is missing.
@@ -441,9 +431,7 @@ func TestRejectPayment_Returns200OnSuccess(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Deposit refund tests (via tenant checkout handler)
-// ---------------------------------------------------------------------------
 
 // TestCheckout_RejectsIfRefundExceedsDeposit verifies that
 // POST /v1/tenants/checkout/:id returns HTTP 400 when refund > deposit.

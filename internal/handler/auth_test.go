@@ -24,9 +24,7 @@ func init() {
 	gin.SetMode(gin.TestMode)
 }
 
-// ---------------------------------------------------------------------------
 // Mock service
-// ---------------------------------------------------------------------------
 
 // mockAuthService is a test double for handler.AuthServicer.
 type mockAuthService struct {
@@ -56,9 +54,7 @@ func (m *mockAuthService) Reject(ctx context.Context, profileID uuid.UUID, email
 	return m.rejectFn(ctx, profileID, email)
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 // newRouter builds a minimal Gin router that injects userID into the context
 // (simulating what the Auth middleware does) and registers the auth handler.
@@ -103,9 +99,7 @@ func decodeBody(t *testing.T, w *httptest.ResponseRecorder) map[string]interface
 	return m
 }
 
-// ---------------------------------------------------------------------------
 // Register tests
-// ---------------------------------------------------------------------------
 
 // TestRegister_CreatesProfileOnFirstCall verifies that the first call to
 // POST /auth/register creates a new profile and returns it with HTTP 200.
@@ -259,9 +253,7 @@ func TestRegister_Returns401WhenUserIDInvalid(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Invite tests
-// ---------------------------------------------------------------------------
 
 // TestInvite_Returns400WhenEmailMissing verifies that POST /auth/invite returns
 // HTTP 400 when the required email field is absent.
@@ -357,9 +349,7 @@ func TestInvite_Returns201OnSuccess(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Approve tests
-// ---------------------------------------------------------------------------
 
 // TestApprove_Returns404ForUnknownID verifies that POST /auth/approve/:id
 // returns HTTP 404 when the profile does not exist.
@@ -447,9 +437,7 @@ func TestApprove_Returns200OnSuccess(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Reject tests
-// ---------------------------------------------------------------------------
 
 // TestReject_Returns404ForUnknownID verifies that POST /auth/reject/:id
 // returns HTTP 404 when the profile does not exist.

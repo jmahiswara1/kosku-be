@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-  # ─── Local PostgreSQL ────────────────────────────────────────────────────────
+  #  Local PostgreSQL ──
   postgres:
     image: postgres:16-alpine
     container_name: kosku_postgres
@@ -20,7 +20,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── KosKu API ───────────────────────────────────────────────────────────────
+  #  KosKu API ─
   api:
     build:
       context: .

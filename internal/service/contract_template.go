@@ -240,7 +240,7 @@ func (s *ContractTemplateService) GenerateContract(ctx context.Context, ownerID,
 	}, nil
 }
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+//  helpers
 
 // populatePlaceholders replaces all placeholder keys in content with their values.
 func populatePlaceholders(content string, placeholders map[string]string) string {

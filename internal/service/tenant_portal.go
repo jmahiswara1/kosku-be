@@ -379,7 +379,7 @@ func (s *TenantPortalService) RequestContractRenewal(ctx context.Context, tenant
 	return nil
 }
 
-// ─── PDF generation ──────────────────────────────────────────────────────────
+//  PDF generation ─
 
 // ErrBillNotPaid is returned when a receipt is requested for an unpaid bill.
 var ErrBillNotPaid = errors.New("receipt is only available for paid bills")
@@ -400,7 +400,7 @@ func generateReceiptPDF(data receiptData) ([]byte, error) {
 	pdf.AddPage()
 	pdf.SetMargins(20, 20, 20)
 
-	// ── Header ──────────────────────────────────────────────────────────────
+	// ── Header
 	pdf.SetFont("Helvetica", "B", 18)
 	pdf.CellFormat(0, 10, "PAYMENT RECEIPT", "", 1, "C", false, 0, "")
 
@@ -418,7 +418,7 @@ func generateReceiptPDF(data receiptData) ([]byte, error) {
 	pdf.Line(20, pdf.GetY(), 190, pdf.GetY())
 	pdf.Ln(4)
 
-	// ── Receipt details ──────────────────────────────────────────────────────
+	// ── Receipt details
 	pdf.SetFont("Helvetica", "B", 11)
 	pdf.CellFormat(50, 7, "Receipt No:", "", 0, "L", false, 0, "")
 	pdf.SetFont("Helvetica", "", 11)
@@ -456,7 +456,7 @@ func generateReceiptPDF(data receiptData) ([]byte, error) {
 	pdf.Line(20, pdf.GetY(), 190, pdf.GetY())
 	pdf.Ln(4)
 
-	// ── Charges breakdown ────────────────────────────────────────────────────
+	// ── Charges breakdown ─
 	pdf.SetFont("Helvetica", "B", 11)
 	pdf.CellFormat(0, 7, "Charges Breakdown", "", 1, "L", false, 0, "")
 	pdf.Ln(2)
@@ -502,7 +502,7 @@ func generateReceiptPDF(data receiptData) ([]byte, error) {
 	pdf.Line(20, pdf.GetY(), 190, pdf.GetY())
 	pdf.Ln(4)
 
-	// ── Status stamp ─────────────────────────────────────────────────────────
+	// ── Status stamp
 	pdf.SetFont("Helvetica", "B", 14)
 	pdf.SetTextColor(0, 128, 0)
 	pdf.CellFormat(0, 10, "STATUS: PAID", "", 1, "C", false, 0, "")

@@ -21,7 +21,7 @@ import (
 	"github.com/sqlc-dev/pqtype"
 )
 
-// ─── mock ─────────────────────────────────────────────────────────────────────
+//  mock ─
 
 // auditMock is a minimal mock that records every CreateAuditLog call.
 // All other methods are no-ops that return zero values.
@@ -49,7 +49,7 @@ func (m *auditMock) callCount() int {
 	return len(m.calls)
 }
 
-// ─── operation simulators ─────────────────────────────────────────────────────
+//  operation simulators ──
 //
 // Each simulator mirrors the exact audit-log call pattern found in the real
 // service methods, extracted so the property test can exercise them without
@@ -108,7 +108,7 @@ func simulateBlacklist(mock *auditMock, ownerID, tenantID uuid.UUID) {
 	mock.record(buildAuditParams(ownerID, "blacklist_tenant", "tenant", tenantID))
 }
 
-// ─── operation registry ───────────────────────────────────────────────────────
+//  operation registry ─
 
 // sensitiveOp describes a sensitive operation and how many audit log entries
 // it is expected to produce.
@@ -159,7 +159,7 @@ var sensitiveOps = []sensitiveOp{
 	},
 }
 
-// ─── property tests ───────────────────────────────────────────────────────────
+//  property tests
 
 // TestAuditCompleteness_Property verifies that for any actor/entity UUID pair,
 // each sensitive operation produces exactly the expected number of audit log

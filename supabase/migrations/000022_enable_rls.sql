@@ -19,7 +19,7 @@ ALTER TABLE announcements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contract_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE staff_permissions ENABLE ROW LEVEL SECURITY;
 
--- ── Profiles ──────────────────────────────────────────────────────────────────
+-- ── Profiles ─
 -- Users can read and update their own profile only
 CREATE POLICY "profiles_select_own" ON profiles
   FOR SELECT USING (auth.uid() = id);
@@ -31,19 +31,19 @@ CREATE POLICY "profiles_update_own" ON profiles
 CREATE POLICY "profiles_service_role" ON profiles
   FOR ALL USING (auth.role() = 'service_role');
 
--- ── Properties ────────────────────────────────────────────────────────────────
+-- ── Properties ──
 -- Owners can only access their own properties
 CREATE POLICY "properties_owner_all" ON properties
   FOR ALL USING (owner_id = auth.uid() OR auth.role() = 'service_role');
 
--- ── Room Types ────────────────────────────────────────────────────────────────
+-- ── Room Types ──
 CREATE POLICY "room_types_owner_all" ON room_types
   FOR ALL USING (
     property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid())
     OR auth.role() = 'service_role'
   );
 
--- ── Rooms ─────────────────────────────────────────────────────────────────────
+-- ── Rooms ─
 CREATE POLICY "rooms_owner_all" ON rooms
   FOR ALL USING (
     property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid())
@@ -57,7 +57,7 @@ CREATE POLICY "rooms_tenant_select" ON rooms
     OR auth.role() = 'service_role'
   );
 
--- ── Room Photos ───────────────────────────────────────────────────────────────
+-- ── Room Photos ─
 CREATE POLICY "room_photos_owner_all" ON room_photos
   FOR ALL USING (
     room_id IN (
@@ -68,7 +68,7 @@ CREATE POLICY "room_photos_owner_all" ON room_photos
     OR auth.role() = 'service_role'
   );
 
--- ── Tenants ───────────────────────────────────────────────────────────────────
+-- ── Tenants ──
 -- Owners can manage tenants in their properties
 CREATE POLICY "tenants_owner_all" ON tenants
   FOR ALL USING (
@@ -83,7 +83,7 @@ CREATE POLICY "tenants_self_select" ON tenants
 CREATE POLICY "tenants_self_update" ON tenants
   FOR UPDATE USING (id = auth.uid() OR auth.role() = 'service_role');
 
--- ── Contracts ─────────────────────────────────────────────────────────────────
+-- ── Contracts 
 CREATE POLICY "contracts_owner_all" ON contracts
   FOR ALL USING (
     property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid())
@@ -93,7 +93,7 @@ CREATE POLICY "contracts_owner_all" ON contracts
 CREATE POLICY "contracts_tenant_select" ON contracts
   FOR SELECT USING (tenant_id = auth.uid() OR auth.role() = 'service_role');
 
--- ── Bills ─────────────────────────────────────────────────────────────────────
+-- ── Bills ─
 CREATE POLICY "bills_owner_all" ON bills
   FOR ALL USING (
     property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid())
@@ -103,11 +103,11 @@ CREATE POLICY "bills_owner_all" ON bills
 CREATE POLICY "bills_tenant_select" ON bills
   FOR SELECT USING (tenant_id = auth.uid() OR auth.role() = 'service_role');
 
--- ── Utility Charges ───────────────────────────────────────────────────────────
+-- ── Utility Charges 
 CREATE POLICY "utility_charges_service_role" ON utility_charges
   FOR ALL USING (auth.role() = 'service_role');
 
--- ── Payments ──────────────────────────────────────────────────────────────────
+-- ── Payments ─
 CREATE POLICY "payments_owner_all" ON payments
   FOR ALL USING (
     bill_id IN (
@@ -121,7 +121,7 @@ CREATE POLICY "payments_owner_all" ON payments
 CREATE POLICY "payments_tenant_all" ON payments
   FOR ALL USING (tenant_id = auth.uid() OR auth.role() = 'service_role');
 
--- ── Tickets ───────────────────────────────────────────────────────────────────
+-- ── Tickets ──
 CREATE POLICY "tickets_owner_all" ON tickets
   FOR ALL USING (
     property_id IN (SELECT id FROM properties WHERE owner_id = auth.uid())
@@ -131,15 +131,15 @@ CREATE POLICY "tickets_owner_all" ON tickets
 CREATE POLICY "tickets_tenant_all" ON tickets
   FOR ALL USING (tenant_id = auth.uid() OR auth.role() = 'service_role');
 
--- ── Ticket Attachments ────────────────────────────────────────────────────────
+-- ── Ticket Attachments ──
 CREATE POLICY "ticket_attachments_service_role" ON ticket_attachments
   FOR ALL USING (auth.role() = 'service_role');
 
--- ── Notifications ─────────────────────────────────────────────────────────────
+-- ── Notifications ──
 CREATE POLICY "notifications_own" ON notifications
   FOR ALL USING (user_id = auth.uid() OR auth.role() = 'service_role');
 
--- ── Audit Logs ────────────────────────────────────────────────────────────────
+-- ── Audit Logs ──
 -- Read-only for owners, full access for service role
 CREATE POLICY "audit_logs_owner_select" ON audit_logs
   FOR SELECT USING (
@@ -150,11 +150,11 @@ CREATE POLICY "audit_logs_owner_select" ON audit_logs
 CREATE POLICY "audit_logs_service_insert" ON audit_logs
   FOR INSERT WITH CHECK (auth.role() = 'service_role');
 
--- ── Invitations ───────────────────────────────────────────────────────────────
+-- ── Invitations ─
 CREATE POLICY "invitations_owner_all" ON invitations
   FOR ALL USING (owner_id = auth.uid() OR auth.role() = 'service_role');
 
--- ── Messages ──────────────────────────────────────────────────────────────────
+-- ── Messages ─
 CREATE POLICY "messages_participants" ON messages
   FOR ALL USING (
     sender_id = auth.uid()
@@ -162,15 +162,15 @@ CREATE POLICY "messages_participants" ON messages
     OR auth.role() = 'service_role'
   );
 
--- ── Announcements ─────────────────────────────────────────────────────────────
+-- ── Announcements ──
 CREATE POLICY "announcements_owner_all" ON announcements
   FOR ALL USING (owner_id = auth.uid() OR auth.role() = 'service_role');
 
--- ── Contract Templates ────────────────────────────────────────────────────────
+-- ── Contract Templates ──
 CREATE POLICY "contract_templates_owner_all" ON contract_templates
   FOR ALL USING (owner_id = auth.uid() OR auth.role() = 'service_role');
 
--- ── Staff Permissions ─────────────────────────────────────────────────────────
+-- ── Staff Permissions 
 CREATE POLICY "staff_permissions_owner_all" ON staff_permissions
   FOR ALL USING (owner_id = auth.uid() OR auth.role() = 'service_role');
 

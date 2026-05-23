@@ -19,9 +19,7 @@ import (
 	"github.com/kosku/backend/internal/service"
 )
 
-// ---------------------------------------------------------------------------
 // Mock service
-// ---------------------------------------------------------------------------
 
 // stubRoomService is a test double for handler.RoomServicer used in unit tests.
 // (The property-based test file defines its own mockRoomService; this avoids conflicts.)
@@ -63,9 +61,7 @@ func (m *stubRoomService) GetRoomHistory(ctx context.Context, ownerID, roomID uu
 	return m.getRoomHistoryFn(ctx, ownerID, roomID)
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 // newRoomHandlerRouter builds a minimal Gin router that injects userID into the
 // context (simulating what the Auth middleware does) and registers the room handler.
@@ -111,9 +107,7 @@ func decodeRoomBody(t *testing.T, w *httptest.ResponseRecorder) map[string]inter
 	return m
 }
 
-// ---------------------------------------------------------------------------
 // CreateRoom tests
-// ---------------------------------------------------------------------------
 
 // TestCreateRoom_Returns409WhenRoomNumberAlreadyExists verifies that
 // POST /v1/properties/:id/rooms returns HTTP 409 when the room number already

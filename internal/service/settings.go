@@ -403,7 +403,7 @@ func (s *SettingsService) ExportData(ctx context.Context, ownerID uuid.UUID, for
 	return buf, "text/csv", nil
 }
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
+//  helpers
 
 // nullableStringSQL converts a string to sql.NullString.
 func nullableStringSQL(s string) sql.NullString {

@@ -29,9 +29,7 @@ import (
 	"github.com/kosku/backend/internal/middleware"
 )
 
-// ---------------------------------------------------------------------------
 // Mock room service for layout persistence tests
-// ---------------------------------------------------------------------------
 
 // mockRoomService is a test double for handler.RoomServicer.
 // Each field holds the function that will be called for the corresponding method.
@@ -73,9 +71,7 @@ func (m *mockRoomService) GetRoomHistory(ctx context.Context, ownerID, roomID uu
 	return m.getRoomHistFn(ctx, ownerID, roomID)
 }
 
-// ---------------------------------------------------------------------------
 // Router helper for room handler tests
-// ---------------------------------------------------------------------------
 
 // newRoomRouter builds a minimal Gin router that injects ownerID into the
 // context (simulating what the Auth middleware does) and registers the room
@@ -116,9 +112,7 @@ func getRequest(r *gin.Engine, path string) *httptest.ResponseRecorder {
 	return w
 }
 
-// ---------------------------------------------------------------------------
 // Property 6: Layout persistence
-// ---------------------------------------------------------------------------
 
 // TestLayoutPersistence_Property is a property-based test that verifies the
 // layout persistence invariant: for any set of N rooms with arbitrary grid

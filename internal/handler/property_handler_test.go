@@ -18,9 +18,7 @@ import (
 	"github.com/kosku/backend/internal/middleware"
 )
 
-// ---------------------------------------------------------------------------
 // Mock service
-// ---------------------------------------------------------------------------
 
 // mockPropertyService is a test double for handler.PropertyServicer.
 type mockPropertyService struct {
@@ -51,9 +49,7 @@ func (m *mockPropertyService) ArchiveProperty(ctx context.Context, ownerID, prop
 	return m.archiveFn(ctx, ownerID, propertyID)
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 // newPropertyRouter builds a minimal Gin router that injects userID into the
 // context (simulating what the Auth middleware does) and registers the property handler.
@@ -97,9 +93,7 @@ func decodePropertyBody(t *testing.T, w *httptest.ResponseRecorder) map[string]i
 	return m
 }
 
-// ---------------------------------------------------------------------------
 // CreateProperty tests
-// ---------------------------------------------------------------------------
 
 // TestCreateProperty_Returns400WhenNameMissing verifies that POST /v1/properties
 // returns HTTP 400 when the required "name" field is absent.

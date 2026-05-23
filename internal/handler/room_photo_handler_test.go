@@ -20,9 +20,7 @@ import (
 	"github.com/kosku/backend/internal/service"
 )
 
-// ---------------------------------------------------------------------------
 // Mock service
-// ---------------------------------------------------------------------------
 
 // mockRoomPhotoService is a test double for handler.RoomPhotoServicer.
 type mockRoomPhotoService struct {
@@ -38,9 +36,7 @@ func (m *mockRoomPhotoService) DeletePhoto(ctx context.Context, ownerID, roomID,
 	return m.deleteFn(ctx, ownerID, roomID, photoID)
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 // newRoomPhotoRouter builds a minimal Gin router that injects userID into the
 // context (simulating what the Auth middleware does) and registers the room photo handler.
@@ -100,9 +96,7 @@ func makeImageData(size int) []byte {
 	return bytes.Repeat([]byte("x"), size)
 }
 
-// ---------------------------------------------------------------------------
 // UploadPhoto tests — file size validation
-// ---------------------------------------------------------------------------
 
 // TestUploadPhoto_Returns400WhenFileTooLarge verifies that
 // POST /v1/rooms/:id/photos returns HTTP 400 when the uploaded file exceeds 5MB.
@@ -179,9 +173,7 @@ func TestUploadPhoto_Returns400WhenFileSizeExactly5MBPlusOne(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // UploadPhoto tests — MIME type validation
-// ---------------------------------------------------------------------------
 
 // TestUploadPhoto_Returns400WhenMIMETypeIsNotImage verifies that
 // POST /v1/rooms/:id/photos returns HTTP 400 when the uploaded file has a
@@ -288,9 +280,7 @@ func TestUploadPhoto_Returns400WhenMIMETypeIsGif(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // UploadPhoto tests — success cases
-// ---------------------------------------------------------------------------
 
 // TestUploadPhoto_Returns201ForJPEG verifies that POST /v1/rooms/:id/photos
 // returns HTTP 201 when a valid JPEG file within the size limit is uploaded.
@@ -404,9 +394,7 @@ func TestUploadPhoto_Returns201ForWebP(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // UploadPhoto tests — missing file
-// ---------------------------------------------------------------------------
 
 // TestUploadPhoto_Returns400WhenNoFileProvided verifies that
 // POST /v1/rooms/:id/photos returns HTTP 400 when no file is included in the request.

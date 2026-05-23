@@ -20,9 +20,7 @@ import (
 	"github.com/kosku/backend/internal/service"
 )
 
-// ---------------------------------------------------------------------------
 // Mock service
-// ---------------------------------------------------------------------------
 
 // stubTicketService is a test double for handler.TicketServicer.
 type stubTicketService struct {
@@ -48,9 +46,7 @@ func (m *stubTicketService) UpdateTicket(ctx context.Context, ownerID uuid.UUID,
 	return m.updateTicketFn(ctx, ownerID, ticketID, req)
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 // newTicketHandlerRouter builds a minimal Gin router that injects userID into
 // the context (simulating what the Auth middleware does) and registers the
@@ -126,9 +122,7 @@ func makeTicketImageData(size int) []byte {
 	return bytes.Repeat([]byte("x"), size)
 }
 
-// ---------------------------------------------------------------------------
 // CreateTicket tests — attachment count validation
-// ---------------------------------------------------------------------------
 
 // TestCreateTicket_Returns400WhenMoreThan3Photos verifies that
 // POST /v1/tickets returns HTTP 400 when more than 3 photo attachments are submitted.
@@ -236,9 +230,7 @@ func TestCreateTicket_Returns400WhenPhotoExceeds5MB(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // CreateTicket tests — success case
-// ---------------------------------------------------------------------------
 
 // TestCreateTicket_Returns201WithValidPayload verifies that
 // POST /v1/tickets returns HTTP 201 when a valid request with up to 3 photos is submitted.
@@ -307,9 +299,7 @@ func TestCreateTicket_Returns201WithValidPayload(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // CreateTicket tests — validation
-// ---------------------------------------------------------------------------
 
 // TestCreateTicket_Returns400WhenTitleMissing verifies that
 // POST /v1/tickets returns HTTP 400 when the title field is absent.

@@ -60,9 +60,7 @@ func countStatus(codes []int, status int) int {
 	return n
 }
 
-// ---------------------------------------------------------------------------
 // Global rate limiter (burst = 100)
-// ---------------------------------------------------------------------------
 
 // TestGlobalRateLimiter_AllowsUpToBurst verifies that the first 100 requests
 // (the burst size) are all accepted with HTTP 200.
@@ -123,9 +121,7 @@ func TestGlobalRateLimiter_RetryAfterHeader(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Auth rate limiter (burst = 10)
-// ---------------------------------------------------------------------------
 
 // TestAuthRateLimiter_AllowsUpToBurst verifies that the first 10 requests
 // (the burst size) are all accepted with HTTP 200.

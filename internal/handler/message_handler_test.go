@@ -18,9 +18,7 @@ import (
 	"github.com/kosku/backend/internal/middleware"
 )
 
-// ---------------------------------------------------------------------------
 // Mock service
-// ---------------------------------------------------------------------------
 
 // stubMessageService is a test double for handler.MessageServicer.
 type stubMessageService struct {
@@ -41,9 +39,7 @@ func (m *stubMessageService) SendMessage(ctx context.Context, senderID uuid.UUID
 	return m.sendMessageFn(ctx, senderID, req)
 }
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
 
 // newMessageHandlerRouter builds a minimal Gin router that injects userID into
 // the context (simulating what the Auth middleware does) and registers the
@@ -73,9 +69,7 @@ func decodeMessageBody(t *testing.T, w *httptest.ResponseRecorder) map[string]in
 	return m
 }
 
-// ---------------------------------------------------------------------------
 // GetThread tests — chronological ordering
-// ---------------------------------------------------------------------------
 
 // TestGetThread_ReturnsMessagesInChronologicalOrder verifies that
 // GET /v1/messages/:userId returns messages ordered by created_at ASC.

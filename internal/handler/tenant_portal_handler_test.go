@@ -20,9 +20,7 @@ import (
 	"github.com/kosku/backend/internal/service"
 )
 
-// ---------------------------------------------------------------------------
 // Router helper for tenant portal unit tests
-// ---------------------------------------------------------------------------
 
 // newTenantPortalFullRouter builds a Gin router with all tenant portal routes
 // registered, injecting tenantID into the context.
@@ -69,9 +67,7 @@ func postTenantPortalJSON(r *gin.Engine, path string, body interface{}) *httptes
 	return w
 }
 
-// ---------------------------------------------------------------------------
 // GET /v1/me/room tests
-// ---------------------------------------------------------------------------
 
 // TestGetMyRoom_Returns404WhenNoActiveAssignment verifies that
 // GET /v1/me/room returns HTTP 404 when the tenant has no active room assignment.
@@ -163,9 +159,7 @@ func TestGetMyRoom_Returns200WhenRoomAssigned(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // GET /v1/me/bills/:id/receipt tests
-// ---------------------------------------------------------------------------
 
 // TestGetBillReceipt_Returns403WhenBillNotPaid verifies that
 // GET /v1/me/bills/:id/receipt returns HTTP 403 when the bill is not paid.
@@ -348,9 +342,7 @@ func TestGetBillReceipt_StreamsPDFWhenBillIsPaid(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // POST /v1/me/contracts/renew tests
-// ---------------------------------------------------------------------------
 
 // TestRequestContractRenewal_CreatesNotificationForOwner verifies that
 // POST /v1/me/contracts/renew returns HTTP 200 and the service is called,

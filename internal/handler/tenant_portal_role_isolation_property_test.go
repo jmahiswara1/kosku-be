@@ -28,9 +28,7 @@ import (
 	"github.com/kosku/backend/internal/middleware"
 )
 
-// ---------------------------------------------------------------------------
 // Mock tenant portal service for role isolation tests
-// ---------------------------------------------------------------------------
 
 // mockTenantPortalService is a test double for handler.TenantPortalServicer.
 // Each field holds the function that will be called for the corresponding method.
@@ -72,9 +70,7 @@ func (m *mockTenantPortalService) RequestContractRenewal(ctx context.Context, te
 	return m.requestContractRenewalFn(ctx, tenantID, req)
 }
 
-// ---------------------------------------------------------------------------
 // Router helper for tenant portal tests
-// ---------------------------------------------------------------------------
 
 // newTenantPortalRouter builds a minimal Gin router that injects tenantID into
 // the context (simulating what the Auth middleware does) and registers the
@@ -103,9 +99,7 @@ func doGet(r *gin.Engine, path string) *httptest.ResponseRecorder {
 	return w
 }
 
-// ---------------------------------------------------------------------------
 // Property 3: Role isolation
-// ---------------------------------------------------------------------------
 
 // TestRoleIsolation_BillsNeverLeakOtherTenantData is a property-based test
 // that verifies GET /v1/me/bills always queries with the authenticated tenant's
@@ -380,9 +374,7 @@ func TestRoleIsolation_TicketsNeverLeakOtherTenantData(t *testing.T) {
 	}
 }
 
-// ---------------------------------------------------------------------------
 // Property 3: Role isolation — cross-tenant injection attempt
-// ---------------------------------------------------------------------------
 
 // TestRoleIsolation_HandlerCannotBeManipulatedToUseOtherTenantID verifies that
 // even if the service is set up with data for multiple tenants, the handler
