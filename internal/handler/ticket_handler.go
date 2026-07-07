@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"io"
 	"net/http"
 	"strconv"
 
@@ -80,31 +79,18 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 		return
 	}
 
-	// Read up to 3 photo files from the "photos" field.
-	var photos [][]byte
-	var photoContentTypes []string
+	attachments, err := parseTicketAttachments(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errorResponse("INVALID_FORM", err.Error()))
+		return
+	}
 
-	if c.Request.MultipartForm != nil {
-		fileHeaders := c.Request.MultipartForm.File["photos"]
-		if len(fileHeaders) > 3 {
-			c.JSON(http.StatusBadRequest, errorResponse("TOO_MANY_ATTACHMENTS", "Maximum 3 photo attachments allowed"))
-			return
-		}
-		for _, fh := range fileHeaders {
-			f, err := fh.Open()
-			if err != nil {
-				c.JSON(http.StatusBadRequest, errorResponse("FILE_READ_ERROR", "Failed to read uploaded file"))
-				return
-			}
-			data, err := io.ReadAll(f)
-			_ = f.Close()
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, errorResponse("READ_FILE_ERROR", "Failed to read uploaded file"))
-				return
-			}
-			photos = append(photos, data)
-			photoContentTypes = append(photoContentTypes, fh.Header.Get("Content-Type"))
-		}
+	// Extract data from attachments.
+	photos := make([][]byte, len(attachments))
+	photoContentTypes := make([]string, len(attachments))
+	for i, att := range attachments {
+		photos[i] = att.Data
+		photoContentTypes[i] = att.ContentType
 	}
 
 	ticket, err := h.svc.CreateTicket(c.Request.Context(), tenantID, req, photos, photoContentTypes)

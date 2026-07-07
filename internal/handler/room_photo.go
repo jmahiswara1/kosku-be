@@ -12,10 +12,6 @@ import (
 	"github.com/kosku/backend/internal/service"
 )
 
-// maxUploadMemory is the maximum amount of memory used when parsing multipart
-// form data. Files larger than this are stored in temporary files.
-const maxUploadMemory = 10 * 1024 * 1024 // 10 MB
-
 // RoomPhotoServicer is the interface that RoomPhotoHandler depends on.
 type RoomPhotoServicer interface {
 	UploadPhoto(ctx context.Context, ownerID, roomID uuid.UUID, fileData []byte, declaredContentType string) (dto.RoomPhotoResponse, error)
