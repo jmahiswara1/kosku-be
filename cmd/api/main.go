@@ -62,7 +62,7 @@ func main() {
 	}
 
 	// Services
-	propertySvc := service.NewPropertyService(queries)
+	propertySvc := service.NewPropertyService(queries, rawDB)
 	roomSvc := service.NewRoomService(queries, rawDB)
 	tenantSvc := service.NewTenantService(queries)
 	billingSvc := service.NewBillingService(queries, storageClient, emailClient)
