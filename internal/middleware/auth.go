@@ -18,6 +18,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+
+	"github.com/kosku/backend/pkg/logger"
 )
 
 func ellipticCurveP256() elliptic.Curve {
@@ -251,7 +253,7 @@ func Auth(jwtSecret, apiKey string, roleLoader ...RoleLoader) gin.HandlerFunc {
 			if errors.Is(err, jwt.ErrTokenExpired) {
 				code, message = "TOKEN_EXPIRED", "Token has expired"
 			}
-			fmt.Printf("[AUTH DEBUG] JWT validation error: %v\n", err)
+			logger.Error("JWT validation failed", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"success": false,
 				"error":   gin.H{"code": code, "message": message},
