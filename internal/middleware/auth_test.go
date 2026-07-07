@@ -42,7 +42,7 @@ func makeToken(t *testing.T, secret string, subject string, exp time.Time) strin
 // The single GET /protected route returns 200 on success.
 func newAuthRouter(secret string) *gin.Engine {
 	r := gin.New()
-	r.GET("/protected", middleware.Auth(secret), func(c *gin.Context) {
+	r.GET("/protected", middleware.Auth(secret, ""), func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"ok": true})
 	})
 	return r
@@ -188,7 +188,7 @@ func TestAuth_SetsUserIDInContext(t *testing.T) {
 	token := makeToken(t, testJWTSecret, expectedUserID, time.Now().Add(time.Hour))
 
 	r := gin.New()
-	r.GET("/protected", middleware.Auth(testJWTSecret), func(c *gin.Context) {
+	r.GET("/protected", middleware.Auth(testJWTSecret, ""), func(c *gin.Context) {
 		userID := c.GetString(middleware.ContextKeyUserID)
 		if userID != expectedUserID {
 			t.Errorf("expected userID=%q in context, got %q", expectedUserID, userID)
@@ -221,7 +221,7 @@ func TestAuth_SetsRoleFromAppMetadata(t *testing.T) {
 	}
 
 	r := gin.New()
-	r.GET("/protected", middleware.Auth(testJWTSecret), func(c *gin.Context) {
+	r.GET("/protected", middleware.Auth(testJWTSecret, ""), func(c *gin.Context) {
 		role := c.GetString(middleware.ContextKeyRole)
 		if role != "owner" {
 			t.Errorf("expected role=owner, got %q", role)

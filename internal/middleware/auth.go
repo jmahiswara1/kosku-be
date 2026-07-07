@@ -20,14 +20,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// cachedAPIKey stores the Supabase anon/service key for JWKS fetching.
-var cachedAPIKey string
-
-// SetAPIKey sets the API key used for JWKS fetching.
-func SetAPIKey(key string) {
-	cachedAPIKey = key
-}
-
 func ellipticCurveP256() elliptic.Curve {
 	return elliptic.P256()
 }
@@ -66,7 +58,8 @@ var (
 )
 
 // fetchJWKS fetches the JWKS from Supabase and caches the keys.
-func fetchJWKS(supabaseURL string) (map[string]*ecdsa.PublicKey, error) {
+// It is safe for concurrent use.
+func fetchJWKS(supabaseURL, apiKey string) (map[string]*ecdsa.PublicKey, error) {
 	jwksMu.RLock()
 	if jwksKeys != nil && time.Now().Before(jwksExpiry) {
 		defer jwksMu.RUnlock()
@@ -89,10 +82,8 @@ func fetchJWKS(supabaseURL string) (map[string]*ecdsa.PublicKey, error) {
 	if err != nil {
 		return nil, fmt.Errorf("create JWKS request: %w", err)
 	}
-	// Supabase requires apikey header — use the anon key from the URL
-	// We store it in a package-level var set during Auth() init
-	if cachedAPIKey != "" {
-		req.Header.Set("apikey", cachedAPIKey)
+	if apiKey != "" {
+		req.Header.Set("apikey", apiKey)
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -163,7 +154,7 @@ func resolveRole(claims *supabaseClaims) string {
 
 // verifyToken validates a JWT token string and returns the parsed claims.
 // Supports both HS256 (legacy) and ES256 (new Supabase projects).
-func verifyToken(tokenStr, jwtSecret string) (*supabaseClaims, error) {
+func verifyToken(tokenStr, jwtSecret, apiKey string) (*supabaseClaims, error) {
 	parser := jwt.NewParser()
 	unverified, _, err := parser.ParseUnverified(tokenStr, &supabaseClaims{})
 	if err != nil {
@@ -189,7 +180,7 @@ func verifyToken(tokenStr, jwtSecret string) (*supabaseClaims, error) {
 		}
 
 		token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
-			return resolveES256Key(t, supabaseURL)
+			return resolveES256Key(t, supabaseURL, apiKey)
 		}, jwt.WithValidMethods([]string{"ES256"}))
 		if err != nil || !token.Valid {
 			return nil, err
@@ -203,7 +194,7 @@ func verifyToken(tokenStr, jwtSecret string) (*supabaseClaims, error) {
 }
 
 // resolveES256Key fetches the ECDSA public key for the given token's kid.
-func resolveES256Key(t *jwt.Token, supabaseURL string) (any, error) {
+func resolveES256Key(t *jwt.Token, supabaseURL, apiKey string) (any, error) {
 	if _, ok := t.Method.(*jwt.SigningMethodECDSA); !ok {
 		return nil, errors.New("unexpected signing method")
 	}
@@ -211,7 +202,7 @@ func resolveES256Key(t *jwt.Token, supabaseURL string) (any, error) {
 	if kid == "" {
 		return nil, errors.New("missing kid in token header")
 	}
-	keys, err := fetchJWKS(supabaseURL)
+	keys, err := fetchJWKS(supabaseURL, apiKey)
 	if err != nil {
 		return nil, fmt.Errorf("fetch JWKS: %w", err)
 	}
@@ -221,7 +212,7 @@ func resolveES256Key(t *jwt.Token, supabaseURL string) (any, error) {
 		jwksMu.Lock()
 		jwksExpiry = time.Time{}
 		jwksMu.Unlock()
-		keys, err = fetchJWKS(supabaseURL)
+		keys, err = fetchJWKS(supabaseURL, apiKey)
 		if err != nil {
 			return nil, fmt.Errorf("refresh JWKS: %w", err)
 		}
@@ -243,7 +234,7 @@ type RoleLoader interface {
 // If roleLoader is non-nil, the user's role is fetched from the database after
 // JWT validation (source of truth). If roleLoader is nil, the role is read from
 // the JWT claims (app_metadata.role → user_metadata.role → role).
-func Auth(jwtSecret string, roleLoader ...RoleLoader) gin.HandlerFunc {
+func Auth(jwtSecret, apiKey string, roleLoader ...RoleLoader) gin.HandlerFunc {
 	var rl RoleLoader
 	if len(roleLoader) > 0 {
 		rl = roleLoader[0]
@@ -254,7 +245,7 @@ func Auth(jwtSecret string, roleLoader ...RoleLoader) gin.HandlerFunc {
 			return
 		}
 
-		claims, err := verifyToken(tokenStr, jwtSecret)
+		claims, err := verifyToken(tokenStr, jwtSecret, apiKey)
 		if err != nil {
 			code, message := "INVALID_TOKEN", "Token is invalid"
 			if errors.Is(err, jwt.ErrTokenExpired) {
