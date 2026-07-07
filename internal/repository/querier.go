@@ -74,6 +74,7 @@ type Querier interface {
 	ListContractsByTenant(ctx context.Context, tenantID uuid.UUID) ([]Contract, error)
 	ListConversations(ctx context.Context, senderID uuid.UUID) ([]Message, error)
 	ListExpiringContracts(ctx context.Context) ([]Contract, error)
+	ListExpiringContractsWithinDays(ctx context.Context, days int32) ([]Contract, error)
 	ListNotifications(ctx context.Context, userID uuid.UUID) ([]Notification, error)
 	ListPaymentsByBill(ctx context.Context, billID uuid.UUID) ([]Payment, error)
 	ListPaymentsByOwnerForExport(ctx context.Context, ownerID uuid.UUID) ([]ListPaymentsByOwnerForExportRow, error)

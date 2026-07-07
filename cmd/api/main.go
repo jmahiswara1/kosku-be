@@ -226,6 +226,9 @@ func main() {
 			settings.DELETE("/staff/:id", settingsHandler.RemoveStaff)
 		}
 
+		// Expiring contracts (owner only)
+		protected.GET("/contracts", middleware.RequireRole("owner"), tenantPortalHandler.ListExpiringContracts)
+
 		// Contract templates
 		templates := protected.Group("/contract-templates")
 		templates.Use(middleware.RequireRole("owner"))

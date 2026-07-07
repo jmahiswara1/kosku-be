@@ -25,6 +25,7 @@ type TenantPortalServicer interface {
 	CreateMyTicket(ctx context.Context, tenantID uuid.UUID, req dto.CreateTicketRequest, photos [][]byte, photoContentTypes []string) (dto.TicketResponse, error)
 	ListMyContracts(ctx context.Context, tenantID uuid.UUID) ([]dto.ContractResponse, error)
 	RequestContractRenewal(ctx context.Context, tenantID uuid.UUID, req dto.ContractRenewalRequest) error
+	ListExpiringContracts(ctx context.Context, days int) ([]dto.ContractResponse, error)
 }
 
 // Ensure *service.TenantPortalService satisfies TenantPortalServicer at compile time.
@@ -394,4 +395,33 @@ func (h *TenantPortalHandler) RequestContractRenewal(c *gin.Context) {
 		"success": true,
 		"data":    gin.H{"message": "Renewal request submitted successfully. The owner has been notified."},
 	})
+}
+
+// ListExpiringContracts handles GET /v1/contracts?expiring=true&days=30.
+// Returns contracts expiring within the specified number of days (default 30).
+//
+//	@Summary		List expiring contracts
+//	@Description	Returns active contracts expiring within the given number of days. Owner only.
+//	@Tags			contracts
+//	@Produce		json
+//	@Param			days	query	int	false	"Number of days to look ahead (default 30)"
+//	@Success		200		{object}	map[string]interface{}
+//	@Failure		401		{object}	map[string]interface{}
+//	@Router			/contracts [get]
+//	@Security		BearerAuth
+func (h *TenantPortalHandler) ListExpiringContracts(c *gin.Context) {
+	days := 30 // default
+	if d := c.Query("days"); d != "" {
+		if parsed, err := strconv.Atoi(d); err == nil && parsed > 0 {
+			days = parsed
+		}
+	}
+
+	contracts, err := h.svc.ListExpiringContracts(c.Request.Context(), days)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse("LIST_EXPIRING_ERROR", "Failed to list expiring contracts"))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": contracts})
 }

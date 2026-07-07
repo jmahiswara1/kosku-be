@@ -319,6 +319,20 @@ func (s *TenantPortalService) ListMyContracts(ctx context.Context, tenantID uuid
 	return result, nil
 }
 
+// ListExpiringContracts returns contracts expiring within the given number of days.
+func (s *TenantPortalService) ListExpiringContracts(ctx context.Context, days int) ([]dto.ContractResponse, error) {
+	rows, err := s.queries.ListExpiringContractsWithinDays(ctx, int32(days))
+	if err != nil {
+		return nil, fmt.Errorf("list expiring contracts: %w", err)
+	}
+
+	result := make([]dto.ContractResponse, 0, len(rows))
+	for _, c := range rows {
+		result = append(result, contractToDTO(c))
+	}
+	return result, nil
+}
+
 // RequestContractRenewal creates a notification for the owner with the renewal request.
 func (s *TenantPortalService) RequestContractRenewal(ctx context.Context, tenantID uuid.UUID, req dto.ContractRenewalRequest) error {
 	// Fetch the active contract.
