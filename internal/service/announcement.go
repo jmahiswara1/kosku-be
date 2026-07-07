@@ -60,6 +60,7 @@ func (s *AnnouncementService) CreateAnnouncement(ctx context.Context, ownerID uu
 	type tenantInfo struct {
 		id       uuid.UUID
 		fullName string
+		email    string
 	}
 	var targets []tenantInfo
 
@@ -74,7 +75,11 @@ func (s *AnnouncementService) CreateAnnouncement(ctx context.Context, ownerID uu
 			if err != nil {
 				continue // skip tenants that can't be resolved
 			}
-			targets = append(targets, tenantInfo{id: tid, fullName: profile.FullName})
+			email := ""
+			if profile.Email.Valid {
+				email = profile.Email.String
+			}
+			targets = append(targets, tenantInfo{id: tid, fullName: profile.FullName, email: email})
 		}
 	} else if propertyIDArg.Valid {
 		// Property-scoped targeting.
@@ -83,7 +88,11 @@ func (s *AnnouncementService) CreateAnnouncement(ctx context.Context, ownerID uu
 			return dto.AnnouncementResponse{}, fmt.Errorf("create announcement: get tenants by property: %w", err)
 		}
 		for _, r := range rows {
-			targets = append(targets, tenantInfo{id: r.ID, fullName: r.FullName})
+			email := ""
+			if r.Email.Valid {
+				email = r.Email.String
+			}
+			targets = append(targets, tenantInfo{id: r.ID, fullName: r.FullName, email: email})
 		}
 	} else {
 		// All-properties targeting.
@@ -92,7 +101,11 @@ func (s *AnnouncementService) CreateAnnouncement(ctx context.Context, ownerID uu
 			return dto.AnnouncementResponse{}, fmt.Errorf("create announcement: get tenants by owner: %w", err)
 		}
 		for _, r := range rows {
-			targets = append(targets, tenantInfo{id: r.ID, fullName: r.FullName})
+			email := ""
+			if r.Email.Valid {
+				email = r.Email.String
+			}
+			targets = append(targets, tenantInfo{id: r.ID, fullName: r.FullName, email: email})
 		}
 	}
 
@@ -113,11 +126,9 @@ func (s *AnnouncementService) CreateAnnouncement(ctx context.Context, ownerID uu
 		notifiedIDs = append(notifiedIDs, t.id.String())
 
 		// Optionally send email — best-effort, non-fatal.
-		// Email addresses are not stored in the profiles table (managed by Supabase Auth),
-		// so we pass an empty string which results in a no-op for the Resend client.
-		if req.SendEmail {
+		if req.SendEmail && t.email != "" {
 			_ = s.emailClient.SendAnnouncement(
-				"", // email not available from profiles table
+				t.email,
 				t.fullName,
 				ann.Title,
 				ann.Body,

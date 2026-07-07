@@ -70,40 +70,32 @@ func (s *SchedulerService) sendReminderForContract(ctx context.Context, contract
 		return
 	}
 
-	// Send reminder to tenant (email not stored in profiles — use phone as fallback).
-	// Note: Supabase Auth manages emails; we use the profile name for the email body.
-	// In a real deployment, tenant email would come from Supabase Auth.
-	// For now, we log the intent and send to owner only.
 	tenantName := tenantProfile.FullName
 	ownerName := ownerProfile.FullName
 	roomNumber := room.Number
 	propertyName := prop.Name
 
-	// Send to owner.
-	if ownerProfile.Phone.Valid {
-		// Owner email would come from Supabase Auth in production.
-		// We log the reminder intent here.
-		logger.Info(fmt.Sprintf(
-			"scheduler: contract expiry reminder — owner=%s tenant=%s room=%s property=%s end_date=%s",
-			ownerName, tenantName, roomNumber, propertyName, endDate,
-		))
+	logger.Info(fmt.Sprintf(
+		"scheduler: contract expiry reminder — owner=%s tenant=%s room=%s property=%s end_date=%s",
+		ownerName, tenantName, roomNumber, propertyName, endDate,
+	))
+
+	// Send to owner if email is available.
+	if ownerProfile.Email.Valid && ownerProfile.Email.String != "" {
+		if err := s.emailClient.SendContractExpiryReminder(
+			ownerProfile.Email.String, ownerName, tenantName, roomNumber, propertyName, endDate,
+		); err != nil {
+			logger.Error("scheduler: send expiry reminder to owner", err)
+		}
 	}
 
-	// Attempt to send email if we have email addresses.
-	// In production, emails come from Supabase Auth; here we use a placeholder.
-	ownerEmail := fmt.Sprintf("%s@placeholder.kosku.id", prop.OwnerID.String())
-	tenantEmail := fmt.Sprintf("%s@placeholder.kosku.id", contract.TenantID.String())
-
-	if err := s.emailClient.SendContractExpiryReminder(
-		ownerEmail, ownerName, tenantName, roomNumber, propertyName, endDate,
-	); err != nil {
-		logger.Error("scheduler: send expiry reminder to owner", err)
-	}
-
-	if err := s.emailClient.SendContractExpiryReminder(
-		tenantEmail, tenantName, tenantName, roomNumber, propertyName, endDate,
-	); err != nil {
-		logger.Error("scheduler: send expiry reminder to tenant", err)
+	// Send to tenant if email is available.
+	if tenantProfile.Email.Valid && tenantProfile.Email.String != "" {
+		if err := s.emailClient.SendContractExpiryReminder(
+			tenantProfile.Email.String, tenantName, tenantName, roomNumber, propertyName, endDate,
+		); err != nil {
+			logger.Error("scheduler: send expiry reminder to tenant", err)
+		}
 	}
 }
 

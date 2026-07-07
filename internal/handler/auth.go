@@ -68,6 +68,11 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	// Body is optional — if empty, use defaults from JWT claims
 	_ = c.ShouldBindJSON(&req)
 
+	// Extract email from JWT claims stored in context by auth middleware.
+	if email := c.GetString(middleware.ContextKeyEmail); email != "" {
+		req.Email = email
+	}
+
 	// Validate required fields only if body was provided with content
 	if req.FullName == "" && c.Request.ContentLength > 0 {
 		c.JSON(http.StatusBadRequest, errorResponse("VALIDATION_ERROR", "full_name is required"))

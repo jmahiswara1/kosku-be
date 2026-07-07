@@ -34,12 +34,15 @@ func base64URLDecode(s string) ([]byte, error) {
 const (
 	ContextKeyUserID = "user_id"
 	ContextKeyRole   = "role"
+	ContextKeyEmail  = "email"
 )
 
 // supabaseClaims represents the JWT claims issued by Supabase Auth.
 // Supabase embeds the user's role inside the "app_metadata" claim.
 type supabaseClaims struct {
 	jwt.RegisteredClaims
+	// Email is the user's email address from Supabase Auth.
+	Email string `json:"email"`
 	// Role is stored at the top level in some Supabase JWT configurations.
 	Role string `json:"role"`
 	// AppMetadata contains owner/tenant/staff role set by the application.
@@ -271,6 +274,11 @@ func Auth(jwtSecret, apiKey string, roleLoader ...RoleLoader) gin.HandlerFunc {
 		}
 
 		c.Set(ContextKeyUserID, userID)
+
+		// Store email from JWT claims for use in registration.
+		if claims.Email != "" {
+			c.Set(ContextKeyEmail, claims.Email)
+		}
 
 		// Resolve role: prefer DB lookup (source of truth) over JWT claims.
 		if rl != nil {

@@ -48,7 +48,7 @@ func (q *Queries) CreateAnnouncement(ctx context.Context, arg CreateAnnouncement
 }
 
 const getActiveTenantsByOwner = `-- name: GetActiveTenantsByOwner :many
-SELECT t.id, p.full_name
+SELECT t.id, p.full_name, p.email
 FROM tenants t
 JOIN profiles p ON p.id = t.id
 JOIN properties pr ON pr.id = t.property_id
@@ -59,8 +59,9 @@ WHERE pr.owner_id = $1
 `
 
 type GetActiveTenantsByOwnerRow struct {
-	ID       uuid.UUID `json:"id"`
-	FullName string    `json:"full_name"`
+	ID       uuid.UUID      `json:"id"`
+	FullName string         `json:"full_name"`
+	Email    sql.NullString `json:"email"`
 }
 
 func (q *Queries) GetActiveTenantsByOwner(ctx context.Context, ownerID uuid.UUID) ([]GetActiveTenantsByOwnerRow, error) {
@@ -72,7 +73,7 @@ func (q *Queries) GetActiveTenantsByOwner(ctx context.Context, ownerID uuid.UUID
 	items := []GetActiveTenantsByOwnerRow{}
 	for rows.Next() {
 		var i GetActiveTenantsByOwnerRow
-		if err := rows.Scan(&i.ID, &i.FullName); err != nil {
+		if err := rows.Scan(&i.ID, &i.FullName, &i.Email); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -87,7 +88,7 @@ func (q *Queries) GetActiveTenantsByOwner(ctx context.Context, ownerID uuid.UUID
 }
 
 const getActiveTenantsByProperty = `-- name: GetActiveTenantsByProperty :many
-SELECT t.id, p.full_name
+SELECT t.id, p.full_name, p.email
 FROM tenants t
 JOIN profiles p ON p.id = t.id
 WHERE t.property_id = $1
@@ -96,8 +97,9 @@ WHERE t.property_id = $1
 `
 
 type GetActiveTenantsByPropertyRow struct {
-	ID       uuid.UUID `json:"id"`
-	FullName string    `json:"full_name"`
+	ID       uuid.UUID      `json:"id"`
+	FullName string         `json:"full_name"`
+	Email    sql.NullString `json:"email"`
 }
 
 func (q *Queries) GetActiveTenantsByProperty(ctx context.Context, propertyID uuid.NullUUID) ([]GetActiveTenantsByPropertyRow, error) {
@@ -109,7 +111,7 @@ func (q *Queries) GetActiveTenantsByProperty(ctx context.Context, propertyID uui
 	items := []GetActiveTenantsByPropertyRow{}
 	for rows.Next() {
 		var i GetActiveTenantsByPropertyRow
-		if err := rows.Scan(&i.ID, &i.FullName); err != nil {
+		if err := rows.Scan(&i.ID, &i.FullName, &i.Email); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

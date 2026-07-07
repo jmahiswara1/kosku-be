@@ -11,7 +11,7 @@ WHERE owner_id = $1
 ORDER BY created_at DESC;
 
 -- name: GetActiveTenantsByProperty :many
-SELECT t.id, p.full_name
+SELECT t.id, p.full_name, p.email
 FROM tenants t
 JOIN profiles p ON p.id = t.id
 WHERE t.property_id = $1
@@ -19,7 +19,7 @@ WHERE t.property_id = $1
   AND (t.is_blacklisted IS NULL OR t.is_blacklisted = FALSE);
 
 -- name: GetActiveTenantsByOwner :many
-SELECT t.id, p.full_name
+SELECT t.id, p.full_name, p.email
 FROM tenants t
 JOIN profiles p ON p.id = t.id
 JOIN properties pr ON pr.id = t.property_id

@@ -22,7 +22,7 @@ func (q *Queries) DeleteProfile(ctx context.Context, id uuid.UUID) error {
 }
 
 const getProfile = `-- name: GetProfile :one
-SELECT id, full_name, avatar_url, phone, role, created_at, updated_at
+SELECT id, full_name, avatar_url, phone, email, role, created_at, updated_at
 FROM profiles
 WHERE id = $1
 `
@@ -35,6 +35,7 @@ func (q *Queries) GetProfile(ctx context.Context, id uuid.UUID) (Profile, error)
 		&i.FullName,
 		&i.AvatarUrl,
 		&i.Phone,
+		&i.Email,
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -49,7 +50,7 @@ SET full_name  = $2,
     phone      = $4,
     updated_at = NOW()
 WHERE id = $1
-RETURNING id, full_name, avatar_url, phone, role, created_at, updated_at
+RETURNING id, full_name, avatar_url, phone, email, role, created_at, updated_at
 `
 
 type UpdateProfileParams struct {
@@ -72,6 +73,7 @@ func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) (P
 		&i.FullName,
 		&i.AvatarUrl,
 		&i.Phone,
+		&i.Email,
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -80,14 +82,15 @@ func (q *Queries) UpdateProfile(ctx context.Context, arg UpdateProfileParams) (P
 }
 
 const upsertProfile = `-- name: UpsertProfile :one
-INSERT INTO profiles (id, full_name, avatar_url, phone, role)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO profiles (id, full_name, avatar_url, phone, email, role)
+VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT (id) DO UPDATE
   SET full_name  = EXCLUDED.full_name,
       avatar_url = EXCLUDED.avatar_url,
       phone      = EXCLUDED.phone,
+      email      = EXCLUDED.email,
       updated_at = NOW()
-RETURNING id, full_name, avatar_url, phone, role, created_at, updated_at
+RETURNING id, full_name, avatar_url, phone, email, role, created_at, updated_at
 `
 
 type UpsertProfileParams struct {
@@ -95,6 +98,7 @@ type UpsertProfileParams struct {
 	FullName  string         `json:"full_name"`
 	AvatarUrl sql.NullString `json:"avatar_url"`
 	Phone     sql.NullString `json:"phone"`
+	Email     sql.NullString `json:"email"`
 	Role      string         `json:"role"`
 }
 
@@ -104,6 +108,7 @@ func (q *Queries) UpsertProfile(ctx context.Context, arg UpsertProfileParams) (P
 		arg.FullName,
 		arg.AvatarUrl,
 		arg.Phone,
+		arg.Email,
 		arg.Role,
 	)
 	var i Profile
@@ -112,6 +117,7 @@ func (q *Queries) UpsertProfile(ctx context.Context, arg UpsertProfileParams) (P
 		&i.FullName,
 		&i.AvatarUrl,
 		&i.Phone,
+		&i.Email,
 		&i.Role,
 		&i.CreatedAt,
 		&i.UpdatedAt,

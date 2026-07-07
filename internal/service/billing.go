@@ -405,10 +405,11 @@ func (s *BillingService) ConfirmPayment(ctx context.Context, ownerID, paymentID 
 		if err != nil {
 			return
 		}
-		// Best-effort email — we don't have the tenant's email in profiles.
-		// The email would be sent if we had access to auth.users.
+		if !tenantProfile.Email.Valid || tenantProfile.Email.String == "" {
+			return
+		}
 		_ = s.emailClient.SendPaymentConfirmed(
-			"", // tenant email not available from profiles table
+			tenantProfile.Email.String,
 			tenantProfile.FullName,
 			prop.Name,
 			payment.Amount,
@@ -488,8 +489,11 @@ func (s *BillingService) RejectPayment(ctx context.Context, ownerID, paymentID u
 		if err != nil {
 			return
 		}
+		if !tenantProfile.Email.Valid || tenantProfile.Email.String == "" {
+			return
+		}
 		_ = s.emailClient.SendPaymentRejected(
-			"", // tenant email not available from profiles table
+			tenantProfile.Email.String,
 			tenantProfile.FullName,
 			prop.Name,
 			req.Reason,

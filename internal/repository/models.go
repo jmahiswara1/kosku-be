@@ -125,6 +125,7 @@ type Profile struct {
 	FullName  string         `json:"full_name"`
 	AvatarUrl sql.NullString `json:"avatar_url"`
 	Phone     sql.NullString `json:"phone"`
+	Email     sql.NullString `json:"email"`
 	Role      string         `json:"role"`
 	CreatedAt sql.NullTime   `json:"created_at"`
 	UpdatedAt sql.NullTime   `json:"updated_at"`

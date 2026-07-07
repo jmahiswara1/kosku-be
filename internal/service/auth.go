@@ -70,11 +70,17 @@ func (s *AuthService) Register(ctx context.Context, userID uuid.UUID, req dto.Re
 		phone = sql.NullString{String: req.Phone, Valid: true}
 	}
 
+	var email sql.NullString
+	if req.Email != "" {
+		email = sql.NullString{String: req.Email, Valid: true}
+	}
+
 	profile, err := s.queries.UpsertProfile(ctx, repository.UpsertProfileParams{
 		ID:        userID,
 		FullName:  req.FullName,
 		AvatarUrl: avatarURL,
 		Phone:     phone,
+		Email:     email,
 		Role:      role,
 	})
 	if err != nil {
@@ -136,6 +142,7 @@ func (s *AuthService) Invite(ctx context.Context, ownerID uuid.UUID, req dto.Inv
 // Approve activates a pending tenant profile and sends a confirmation email.
 // profileID is the UUID of the tenant's profile row.
 // tenantEmail is the tenant's email address for the notification (optional).
+// If empty, the email from the profile record is used as fallback.
 func (s *AuthService) Approve(ctx context.Context, profileID uuid.UUID, tenantEmail string) (dto.ProfileResponse, error) {
 	profile, err := s.queries.GetProfile(ctx, profileID)
 	if err != nil {
@@ -145,7 +152,12 @@ func (s *AuthService) Approve(ctx context.Context, profileID uuid.UUID, tenantEm
 		return dto.ProfileResponse{}, fmt.Errorf("approve: get profile: %w", err)
 	}
 
-	// Send confirmation email if an email address was provided. Non-fatal.
+	// Use profile email as fallback if no email was provided in the request.
+	if tenantEmail == "" && profile.Email.Valid {
+		tenantEmail = profile.Email.String
+	}
+
+	// Send confirmation email if an email address is available. Non-fatal.
 	if tenantEmail != "" {
 		appURL := s.appURL + "/login"
 		_ = s.emailClient.SendRegistrationApproved(tenantEmail, profile.FullName, appURL)
@@ -157,6 +169,7 @@ func (s *AuthService) Approve(ctx context.Context, profileID uuid.UUID, tenantEm
 // Reject sends a rejection email and deletes the pending profile.
 // profileID is the UUID of the tenant's profile row.
 // tenantEmail is the tenant's email address for the notification (optional).
+// If empty, the email from the profile record is used as fallback.
 func (s *AuthService) Reject(ctx context.Context, profileID uuid.UUID, tenantEmail string) error {
 	profile, err := s.queries.GetProfile(ctx, profileID)
 	if err != nil {
@@ -166,7 +179,12 @@ func (s *AuthService) Reject(ctx context.Context, profileID uuid.UUID, tenantEma
 		return fmt.Errorf("reject: get profile: %w", err)
 	}
 
-	// Send rejection email if an email address was provided. Non-fatal.
+	// Use profile email as fallback if no email was provided in the request.
+	if tenantEmail == "" && profile.Email.Valid {
+		tenantEmail = profile.Email.String
+	}
+
+	// Send rejection email if an email address is available. Non-fatal.
 	if tenantEmail != "" {
 		_ = s.emailClient.SendRegistrationRejected(tenantEmail, profile.FullName)
 	}
@@ -194,6 +212,9 @@ func profileToDTO(p repository.Profile) dto.ProfileResponse {
 	}
 	if p.Phone.Valid {
 		resp.Phone = p.Phone.String
+	}
+	if p.Email.Valid {
+		resp.Email = p.Email.String
 	}
 	if p.CreatedAt.Valid {
 		resp.CreatedAt = p.CreatedAt.Time.Format(time.RFC3339)

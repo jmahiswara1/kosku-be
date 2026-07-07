@@ -187,8 +187,11 @@ func (s *TicketService) CreateTicket(
 			if err != nil {
 				return
 			}
+			if !ownerProfile.Email.Valid || ownerProfile.Email.String == "" {
+				return
+			}
 			_ = s.emailClient.SendComplaintSubmitted(
-				"", // owner email not available from profiles table
+				ownerProfile.Email.String,
 				ownerProfile.FullName,
 				prop.Name,
 				ticket.ID.String(),
@@ -365,8 +368,11 @@ func (s *TicketService) UpdateTicket(
 		if err != nil {
 			return
 		}
+		if !tenantProfile.Email.Valid || tenantProfile.Email.String == "" {
+			return
+		}
 		_ = s.emailClient.SendComplaintUpdated(
-			"", // tenant email not available from profiles table
+			tenantProfile.Email.String,
 			tenantProfile.FullName,
 			prop.Name,
 			ticketID.String(),

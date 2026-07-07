@@ -9,6 +9,7 @@ type RegisterRequest struct {
 	FullName  string `json:"full_name" binding:"required"`
 	AvatarURL string `json:"avatar_url"`
 	Phone     string `json:"phone"`
+	Email     string `json:"email"`
 	// Role is the desired role for the user. Accepted values: owner, tenant, staff.
 	// Defaults to "tenant" if omitted.
 	Role string `json:"role"`
@@ -38,6 +39,7 @@ type ProfileResponse struct {
 	FullName  string `json:"full_name"`
 	AvatarURL string `json:"avatar_url,omitempty"`
 	Phone     string `json:"phone,omitempty"`
+	Email     string `json:"email,omitempty"`
 	Role      string `json:"role"`
 	CreatedAt string `json:"created_at,omitempty"`
 	UpdatedAt string `json:"updated_at,omitempty"`
