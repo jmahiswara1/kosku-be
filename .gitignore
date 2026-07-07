@@ -1,6 +1,6 @@
 # Binaries
 bin/
-api
+/api
 *.exe
 *.exe~
 *.dll
