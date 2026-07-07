@@ -1,3 +1,9 @@
+// Package middleware provides HTTP middleware for the Kosku API.
+//
+// NOTE: The rate limiter implementation uses in-memory per-IP tracking.
+// This works for single-instance deployments but does NOT work across
+// multiple instances behind a load balancer. For production multi-instance
+// deployments, consider using a Redis-backed rate limiter.
 package middleware
 
 import (
